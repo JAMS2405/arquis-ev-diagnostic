@@ -48,6 +48,18 @@ Pines rotulados, en este orden: **B+, DS, B-, TX, RX, ZB**.
 
 Mediciones informadas por el usuario (dudosas: no se sabe qué valor es de TX y cuál de RX, ni el estado de la scooter ni la referencia de masa): una línea ≈ 4,26 V y la otra ≈ 2,27 V; al acelerar solo varían ≈ 0,01 V. **No concluyentes**: un multímetro en DC no distingue si hay datos. Pendiente repetir la medición con la tabla de `ELECTRICAL_SAFETY.md`.
 
+### Placa de la pantalla (observada en fotos del usuario, sin verificación eléctrica)
+
+Lo que se lee en las fotos:
+
+- Serigrafía de la placa: `ZP-H2_LEM5010_BLU V1.0`, fecha `2024-1-12`.
+- **Módulo Bluetooth LE en la propia pantalla**: serigrafía `Orient Sunteh FLT_T3_V1.0`. El BLE de la scooter parece originarse aquí. Qué hace exactamente y a qué MCU/UART se conecta: sin confirmar.
+- Condensadores electrolíticos de 470 µF/10 V y 22 µF/100 V: la entrada está diseñada para tensiones de varias decenas de voltios (el valor real de B+ sigue sin medir).
+- Pads de depuración rotulados `5V`, `SWD`, `SWC`, `RES`, `GND` (interfaz SWD del MCU de la pantalla). **No se usan en este proyecto**: quedan fuera del alcance (solo observación) y se evita cualquier acceso al firmware del vehículo.
+- Conector rojo de 6 pines con rotulación `ZB, RX, TX, B-, DS, B+`.
+- Otra placa/cara muestra rótulos como `5V`, `4.3V`, `DIO`, `CLK`, `TX`, `RX`, `GND`. La existencia de una línea de 4,3 V rotulada **podría** explicar la medición de ≈4,26 V; es solo una hipótesis.
+- Colores de cada cable del conector: sin identificar.
+
 ---
 
 **Evobike S13-2**: no hay documentación de protocolos, tensiones ni conectores confirmada. Todo dato del vehículo (tensión nominal de batería, niveles lógicos de UART, velocidad en baudios, servicios BLE) debe **medirse y registrarse** durante la investigación, no suponerse.
