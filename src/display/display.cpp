@@ -25,6 +25,10 @@ constexpr int16_t kValueX    = 88;  // fits 12 chars at size 2 (e.g. "0.1.0-stag
 constexpr int16_t kRowHeight = 24;
 constexpr int16_t kRowsTop   = 60;
 
+char g_netSsid[24] = "";
+char g_netPass[24] = "";
+char g_netUrl[32]  = "";
+
 SPIClass g_spi(FSPI);
 Adafruit_ILI9341 g_tft(&g_spi, pins::TFT_DC, pins::TFT_CS, pins::TFT_RST);
 
@@ -107,6 +111,25 @@ void showStatusLayout(const StatusData& data) {
     g_tft.setCursor(4, 40);
     g_tft.print("STAGE 1 - SYSTEM STATUS");
 
+    if (g_netSsid[0]) {
+        g_tft.drawFastHLine(0, 178, kWidth, kAccent);
+        g_tft.setTextColor(kWarn, kBg);
+        g_tft.setTextSize(1);
+        g_tft.setCursor(4, 188);
+        g_tft.print("PHONE WEB - connect to WiFi:");
+        g_tft.setTextColor(kFg, kBg);
+        g_tft.setTextSize(2);
+        g_tft.setCursor(4, 204);
+        g_tft.print(g_netSsid);
+        g_tft.setCursor(4, 228);
+        g_tft.print("Key ");
+        g_tft.print(g_netPass);
+        g_tft.setTextSize(1);
+        g_tft.setTextColor(kAccent, kBg);
+        g_tft.setCursor(4, 256);
+        g_tft.print(g_netUrl);
+    }
+
     drawLabel(0, "FW");
     drawLabel(1, "Uptime");
     drawLabel(2, "Heap");
@@ -136,6 +159,12 @@ void updateStatus(const StatusData& data) {
 
     formatBytes(buf, sizeof(buf), data.flash_size_bytes);
     drawValue(4, buf, kFg);
+}
+
+void setNetworkInfo(const char* ssid, const char* password, const char* url) {
+    strncpy(g_netSsid, ssid, sizeof(g_netSsid) - 1);
+    strncpy(g_netPass, password, sizeof(g_netPass) - 1);
+    strncpy(g_netUrl, url, sizeof(g_netUrl) - 1);
 }
 
 void showTextList(const char* title, const char* const* lines, int count) {

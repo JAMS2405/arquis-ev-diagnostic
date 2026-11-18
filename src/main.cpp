@@ -23,6 +23,11 @@
 #include "config/console.h"
 #include "config/project_config.h"
 #include "display/display.h"
+#include "web/web_server.h"
+
+#if defined(SET_LOOP_TASK_STACK_SIZE)
+SET_LOOP_TASK_STACK_SIZE(16 * 1024);  // GATT exploration may run inside an HTTP handler
+#endif
 
 namespace {
 
@@ -32,6 +37,7 @@ constexpr unsigned long kHeartbeatMs     = 30000;
 constexpr uint32_t kDefaultScanSecs      = 8;
 constexpr uint32_t kMaxScanSecs          = 30;
 
+bool g_webOk                  = false;
 unsigned long g_lastRefresh   = 0;
 unsigned long g_lastHeartbeat = 0;
 bool g_displayOk              = false;
@@ -71,6 +77,7 @@ void printHelp() {
     out.println("  scan [secs]   BLE scan (default 8, max 30)");
     out.println("  list          reprint last scan");
     out.println("  gatt <index>  read-only GATT exploration of a scanned device");
+    out.println("  wifi          show the web UI access (SSID, password, URL)");
 }
 
 void showScanOnDisplay() {
@@ -125,6 +132,13 @@ void handleCommand(const String& line) {
             if (v > 0) secs = (v > (long)kMaxScanSecs) ? kMaxScanSecs : (uint32_t)v;
         }
         cmdScan(secs);
+    } else if (cmd == "wifi") {
+        if (g_webOk) {
+            out.printf("Web UI: SSID=%s  password=%s  url=%s\n", web::ssid(), web::password(),
+                       web::url().c_str());
+        } else {
+            out.println("Web UI not running");
+        }
     } else if (cmd == "list") {
         ble_analyzer::printList(out);
     } else if (cmd.startsWith("gatt")) {
@@ -173,20 +187,33 @@ void setup() {
     g_displayOk = display::begin();
     if (g_displayOk) {
         display::showBoot(ARQUIS_PROJECT_NAME, ARQUIS_FW_VERSION);
-        delay(kBootScreenMs);
-        display::showStatusLayout(status);
     } else {
         console::out().println("Display: init FAILED");
     }
 
     g_bleOk = ble_analyzer::begin();
     console::out().println(g_bleOk ? "BLE: ready (read-only analyzer)" : "BLE: init FAILED");
+
+    g_webOk = g_bleOk && web::begin();
+    if (g_webOk) {
+        console::out().printf("Web UI: SSID=%s  password=%s  url=%s\n", web::ssid(), web::password(),
+                              web::url().c_str());
+        display::setNetworkInfo(web::ssid(), web::password(), web::url().c_str());
+    } else {
+        console::out().println("Web UI: NOT started");
+    }
+
+    if (g_displayOk) {
+        delay(kBootScreenMs);
+        display::showStatusLayout(status);
+    }
     printHelp();
     console::out().println("> ready");
 }
 
 void loop() {
     pollSerialCommands();
+    web::loop();
 
     if (g_displayOk && millis() - g_lastRefresh >= kStatusRefreshMs) {
         g_lastRefresh = millis();
