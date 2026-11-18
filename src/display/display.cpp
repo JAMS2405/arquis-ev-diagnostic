@@ -138,4 +138,22 @@ void updateStatus(const StatusData& data) {
     drawValue(4, buf, kFg);
 }
 
+void showTextList(const char* title, const char* const* lines, int count) {
+    constexpr int kMaxLines = 27;
+    g_tft.fillScreen(kBg);
+    g_tft.setTextColor(kAccent, kBg);
+    g_tft.setTextSize(2);
+    g_tft.setCursor(4, 4);
+    g_tft.print(title);
+    g_tft.drawFastHLine(0, 24, kWidth, kAccent);
+
+    g_tft.setTextColor(kFg, kBg);
+    g_tft.setTextSize(1);
+    const int n = count < kMaxLines ? count : kMaxLines;
+    for (int i = 0; i < n; i++) {
+        g_tft.setCursor(2, 30 + i * 10);
+        g_tft.print(lines[i]);
+    }
+}
+
 }  // namespace display

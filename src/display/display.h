@@ -34,4 +34,8 @@ void showStatusLayout(const StatusData& data);
 /// Updates only the dynamic values of the status screen (cheap, no flicker).
 void updateStatus(const StatusData& data);
 
+/// Draws a titled list of short text lines (size 1 font, up to 40 chars/line,
+/// up to 27 lines). Used by the BLE scan result view.
+void showTextList(const char* title, const char* const* lines, int count);
+
 }  // namespace display

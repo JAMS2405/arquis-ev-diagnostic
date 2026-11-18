@@ -20,6 +20,14 @@ public:
         cdc_.setTxTimeoutMs(0);   // never block when no host is attached
     }
 
+    /// Reads from either connector (UART0 or native USB CDC).
+    int available() { return Serial.available() + cdc_.available(); }
+    int read() {
+        if (Serial.available()) return Serial.read();
+        if (cdc_.available()) return cdc_.read();
+        return -1;
+    }
+
     size_t write(uint8_t c) override {
         Serial.write(c);
         cdc_.write(c);
