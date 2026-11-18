@@ -10,6 +10,7 @@
 
 #include <Arduino.h>
 
+#include "config/console.h"
 #include "config/project_config.h"
 #include "display/display.h"
 
@@ -17,7 +18,9 @@ namespace {
 
 constexpr unsigned long kBootScreenMs      = 1500;
 constexpr unsigned long kStatusRefreshMs   = 1000;
-unsigned long g_lastRefresh = 0;
+constexpr unsigned long kHeartbeatMs       = 5000;
+unsigned long g_lastRefresh   = 0;
+unsigned long g_lastHeartbeat = 0;
 
 display::StatusData collectStatus() {
     display::StatusData d;
@@ -31,29 +34,29 @@ display::StatusData collectStatus() {
 }
 
 void reportSystemOverSerial(const display::StatusData& d) {
-    Serial.printf("%s v%s\n", d.project_name, d.fw_version);
-    Serial.printf("Chip:  %s rev %d, %d core(s)\n", ESP.getChipModel(), ESP.getChipRevision(),
+    console::out().printf("%s v%s\n", d.project_name, d.fw_version);
+    console::out().printf("Chip:  %s rev %d, %d core(s)\n", ESP.getChipModel(), ESP.getChipRevision(),
                   ESP.getChipCores());
-    Serial.printf("Flash: %lu bytes\n", (unsigned long)d.flash_size_bytes);
+    console::out().printf("Flash: %lu bytes\n", (unsigned long)d.flash_size_bytes);
     if (d.psram_total_bytes == 0) {
-        Serial.println("PSRAM: NOT FOUND");
+        console::out().println("PSRAM: NOT FOUND");
     } else {
-        Serial.printf("PSRAM: %lu bytes\n", (unsigned long)d.psram_total_bytes);
+        console::out().printf("PSRAM: %lu bytes\n", (unsigned long)d.psram_total_bytes);
     }
-    Serial.printf("Heap:  %lu bytes free\n", (unsigned long)d.heap_free_bytes);
+    console::out().printf("Heap:  %lu bytes free\n", (unsigned long)d.heap_free_bytes);
 }
 
 }  // namespace
 
 void setup() {
-    Serial.begin(config::SERIAL_BAUD);
+    console::out().begin(config::SERIAL_BAUD);
     delay(500);
 
     const display::StatusData status = collectStatus();
     reportSystemOverSerial(status);
 
     if (!display::begin()) {
-        Serial.println("Display: init FAILED");
+        console::out().println("Display: init FAILED");
         return;
     }
     display::showBoot(ARQUIS_PROJECT_NAME, ARQUIS_FW_VERSION);
@@ -65,5 +68,9 @@ void loop() {
     if (millis() - g_lastRefresh >= kStatusRefreshMs) {
         g_lastRefresh = millis();
         display::updateStatus(collectStatus());
+    }
+    if (millis() - g_lastHeartbeat >= kHeartbeatMs) {
+        g_lastHeartbeat = millis();
+        reportSystemOverSerial(collectStatus());
     }
 }
