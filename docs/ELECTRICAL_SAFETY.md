@@ -40,6 +40,19 @@ Este proyecto toca la electrónica de un vehículo con batería de potencia. Una
 
 Para medir tensión de batería en v1 se usa **solo el multímetro**. Un futuro monitor de alta tensión requeriría divisor de alta impedancia calificado, fusible, aislamiento y revisión previa de diseño documentada.
 
+## Conector de la pantalla de la Evobike S13-2
+
+Pines: B+, DS, B-, TX, RX, ZB (ver `HARDWARE.md`). Clasificación:
+
+| Pin | Zona | Regla |
+|---|---|---|
+| B+ | Roja | Tensión de batería. **Nunca** al ESP32. Cuidado al medir: una punta que toque pines vecinos puede provocar un cortocircuito. |
+| B- | Referencia | Es la masa para medir y para el GND común del analizador. |
+| TX, RX | Amarilla | Solo a través de divisor/adaptador de nivel validado (ver más abajo), de una línea a la vez. |
+| DS, ZB | Roja hasta medir | Función desconocida. No conectar. |
+
+Con la pantalla conectada a la batería, **no conectar a la vez un portátil enchufado a red** al ESP32 mientras este comparte GND (B-) con la scooter. Usar un portátil funcionando a batería o un aislador USB.
+
 ## Prácticas obligatorias
 
 1. **Vehículo apagado y batería desconectada** al cablear. Rueda motriz levantada del suelo en cualquier prueba con el vehículo encendido.
