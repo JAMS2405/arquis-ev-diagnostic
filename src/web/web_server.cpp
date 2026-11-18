@@ -5,6 +5,7 @@
 #include <esp_system.h>
 
 #include "ble/ble_analyzer.h"
+#include "bms/jbd_bms.h"
 #include "config/project_config.h"
 #include "web/web_page.h"
 
@@ -180,6 +181,31 @@ void handleGatt() {
     g_server.send(200, "text/plain; charset=utf-8", sink.text);
 }
 
+// Synchronous. Sends 3 fixed READ requests to a JBD BMS (see bms/jbd_bms.h for the
+// narrow write exception). Triggered only by an explicit button press in the UI.
+void handleBms() {
+    if (g_server.method() != HTTP_POST) {
+        sendJson(405, "{\"error\":\"POST required\"}");
+        return;
+    }
+    if (ble_analyzer::isScanning()) {
+        sendJson(409, "{\"error\":\"scan in progress\"}");
+        return;
+    }
+    if (!g_server.hasArg("index")) {
+        sendJson(400, "{\"error\":\"missing index\"}");
+        return;
+    }
+    const int index = g_server.arg("index").toInt();
+    if (index < 0 || index >= ble_analyzer::deviceCount()) {
+        sendJson(400, "{\"error\":\"invalid index\"}");
+        return;
+    }
+    static jbd_bms::Report report;
+    jbd_bms::readReport(index, report);
+    sendJson(200, jbd_bms::toJson(report));
+}
+
 void handleNotFound() { sendJson(404, "{\"error\":\"not found\"}"); }
 
 }  // namespace
@@ -197,6 +223,7 @@ bool begin() {
     g_server.on("/api/scan", HTTP_ANY, handleScan);
     g_server.on("/api/devices", HTTP_GET, handleDevices);
     g_server.on("/api/gatt", HTTP_ANY, handleGatt);
+    g_server.on("/api/bms", HTTP_ANY, handleBms);
     g_server.onNotFound(handleNotFound);
     g_server.begin();
 

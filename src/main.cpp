@@ -11,6 +11,8 @@
  *   list           reprint the last scan result
  *   gatt <index>   connect to device <index> of the last scan and print its GATT
  *                  tree, reading ONLY readable characteristics. NEVER writes.
+ *   jbd <index>    JBD BMS report. Sends 3 fixed standard READ requests (opt-in,
+ *                  src/bms). Only for batteries you own.
  *
  * UART analyzer / electrical monitor / storage / diagnostics are NOT
  * implemented yet. Nothing here transmits to or measures any vehicle signal;
@@ -20,6 +22,7 @@
 #include <Arduino.h>
 
 #include "ble/ble_analyzer.h"
+#include "bms/jbd_bms.h"
 #include "config/console.h"
 #include "config/project_config.h"
 #include "display/display.h"
@@ -77,6 +80,7 @@ void printHelp() {
     out.println("  scan [secs]   BLE scan (default 8, max 30)");
     out.println("  list          reprint last scan");
     out.println("  gatt <index>  read-only GATT exploration of a scanned device");
+    out.println("  jbd <index>   JBD BMS report (sends 3 standard READ requests; own batteries only)");
     out.println("  wifi          show the web UI access (SSID, password, URL)");
 }
 
@@ -132,6 +136,17 @@ void handleCommand(const String& line) {
             if (v > 0) secs = (v > (long)kMaxScanSecs) ? kMaxScanSecs : (uint32_t)v;
         }
         cmdScan(secs);
+    } else if (cmd.startsWith("jbd")) {
+        const String arg = cmd.substring(3);
+        if (arg.length() == 0) {
+            out.println("usage: jbd <index>  (see 'scan' / 'list'). Own batteries only.");
+        } else if (!g_bleOk) {
+            out.println("BLE not available");
+        } else {
+            static jbd_bms::Report report;
+            jbd_bms::readReport((int)arg.toInt(), report);
+            jbd_bms::printText(report, out);
+        }
     } else if (cmd == "wifi") {
         if (g_webOk) {
             out.printf("Web UI: SSID=%s  password=%s  url=%s\n", web::ssid(), web::password(),
