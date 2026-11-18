@@ -21,7 +21,7 @@ constexpr uint16_t kAccent = ILI9341_CYAN;
 constexpr uint16_t kWarn   = ILI9341_YELLOW;
 
 // Layout of the status screen
-constexpr int16_t kValueX    = 110;
+constexpr int16_t kValueX    = 88;  // fits 12 chars at size 2 (e.g. "0.1.0-stage1")
 constexpr int16_t kRowHeight = 24;
 constexpr int16_t kRowsTop   = 60;
 
@@ -69,6 +69,7 @@ bool begin() {
     g_spi.begin(pins::TFT_SCLK, pins::TFT_MISO, pins::TFT_MOSI, pins::TFT_CS);
     g_tft.begin();
     g_tft.setRotation(0);  // portrait, 240x320
+    g_tft.setTextWrap(false);  // never let long text wrap onto the next row
     g_tft.fillScreen(kBg);
 
     digitalWrite(pins::TFT_BL, HIGH);  // module-dependent; see docs/HARDWARE.md
@@ -98,7 +99,7 @@ void showStatusLayout(const StatusData& data) {
     g_tft.setTextColor(kAccent, kBg);
     g_tft.setTextSize(2);
     g_tft.setCursor(4, 8);
-    g_tft.print(data.project_name);
+    g_tft.print("ARQUIS EV DIAG");  // short title: the full name does not fit at size 2
     g_tft.drawFastHLine(0, 30, kWidth, kAccent);
 
     g_tft.setTextColor(kWarn, kBg);
