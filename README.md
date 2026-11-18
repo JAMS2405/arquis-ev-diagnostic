@@ -110,7 +110,7 @@ El estado real de compilación y pruebas se registra en [`docs/TESTING.md`](docs
 | Etapa | Contenido | Estado |
 |:-:|---|---|
 | 0 | Estructura del repositorio y documentación | En curso |
-| 1 | Base del firmware: arranque, configuración, pantalla TFT | Pendiente de autorización |
+| 1 | Base del firmware: arranque, configuración, pantalla TFT | Implementada (rama `feat/stage-1-display`), compila; **pendiente de validación en hardware** |
 | 2 | UART Analyzer (pasivo) | Pendiente |
 | 3 | BLE Analyzer | Pendiente |
 | 4 | Electrical Monitor | Pendiente |

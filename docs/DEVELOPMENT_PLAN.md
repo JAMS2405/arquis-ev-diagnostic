@@ -25,14 +25,17 @@ Reglas transversales:
 
 ## Etapa 1 — Base del firmware y pantalla
 
+**Estado:** implementada y compilando en la rama `feat/stage-1-display`. **No cerrada**: faltan las verificaciones de hardware. No fusionar a `main` hasta cumplirlas.
+
 **Alcance:** arranque estable, configuración central, controlador de pantalla TFT, pantalla de estado y navegación básica (sin táctil; entrada por definir, por ejemplo botón(es) físicos).
 
 **Criterios de aceptación**
-- Compila sin errores ni advertencias relevantes.
-- Verificación de PSRAM y flash reportada por serie. *(hardware)*
-- Pantalla ILI9341 muestra texto y colores correctamente, orientación y resolución 240×320 confirmadas. *(hardware)*
-- Pines finales verificados contra la placa física y `PINOUT.md` actualizado. *(hardware)*
-- Estructura de módulos con interfaces definidas, sin lógica de otros módulos.
+- [x] Compila sin errores ni advertencias relevantes (S-002).
+- [ ] Verificación de PSRAM y flash reportada por serie. *(hardware)* — el código la imprime; falta ejecutarlo en la placa.
+- [ ] Pantalla ILI9341 muestra texto y colores correctamente, orientación y resolución 240×320 confirmadas. *(hardware)*
+- [ ] Pines finales verificados contra la placa física y `PINOUT.md` actualizado. *(hardware)*
+- [x] Estructura de módulos con interfaces definidas, sin lógica de otros módulos (`display::` expone `begin`, `showBoot`, `showStatusLayout`, `updateStatus`).
+- [ ] **Decisión pendiente:** entrada para navegación (botón/es físicos, encoder). No hay táctil y el hardware de entrada no está definido, por lo que **no se implementó navegación**; la pantalla de estado es de solo lectura.
 
 ## Etapa 2 — UART Analyzer (prioridad máxima)
 
