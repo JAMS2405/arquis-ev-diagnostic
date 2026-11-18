@@ -1,16 +1,27 @@
 #!/usr/bin/env python3
-"""Fails if any BLE write/subscribe call exists outside the one allowed module.
+"""Enforces the BLE write policy.
 
-Policy: the project's BLE code is read-only, with a single audited exception:
-src/bms/jbd_bms.cpp (3 fixed JBD register-read requests + notification
-subscription). Run from the repository root:  python3 tools/check_ble_write_policy.py
+The project's BLE code is read-only, with audited exceptions, each limited to the
+calls listed here:
+
+  src/bms/jbd_bms.cpp    : writeValue + subscribe  (3 fixed JBD register-read
+                           requests, built only by jbd::buildReadRequest())
+  src/ble/ble_listen.cpp : subscribe ONLY          (listen-only: enables
+                           notifications; never sends data to a characteristic)
+
+Any other file calling these functions fails the check. Run from the repo root:
+    python3 tools/check_ble_write_policy.py
 """
 import pathlib
 import re
 import sys
 
-ALLOWED = {pathlib.Path("src/bms/jbd_bms.cpp")}
-FORBIDDEN = re.compile(r"\b(writeValue|writeDescriptor|subscribe|setNotify|secureConnection|startSecurity)\s*\(")
+ALL_GUARDED = ["writeValue", "writeDescriptor", "subscribe", "unsubscribe",
+               "setNotify", "secureConnection", "startSecurity"]
+ALLOWED = {
+    pathlib.Path("src/bms/jbd_bms.cpp"): {"writeValue", "subscribe", "unsubscribe"},
+    pathlib.Path("src/ble/ble_listen.cpp"): {"subscribe"},
+}
 
 def strip_comments(text: str) -> str:
     text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
@@ -20,14 +31,16 @@ bad = []
 for path in sorted(pathlib.Path("src").rglob("*")):
     if path.suffix not in {".cpp", ".h", ".hpp", ".c"}:
         continue
-    if path in ALLOWED:
-        continue
+    allowed = ALLOWED.get(path, set())
+    forbidden = [n for n in ALL_GUARDED if n not in allowed]
+    pattern = re.compile(r"\b(" + "|".join(forbidden) + r")\s*\(")
     for n, line in enumerate(strip_comments(path.read_text(encoding="utf-8")).splitlines(), 1):
-        if FORBIDDEN.search(line):
+        if pattern.search(line):
             bad.append(f"{path}:{n}: {line.strip()}")
 
 if bad:
     print("BLE write policy VIOLATION:")
     print("\n".join(bad))
     sys.exit(1)
-print("BLE write policy OK: no write/subscribe calls outside", ", ".join(map(str, ALLOWED)))
+print("BLE write policy OK. Exceptions: " + "; ".join(
+    f"{p} -> {sorted(a)}" for p, a in ALLOWED.items()))

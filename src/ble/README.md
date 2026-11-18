@@ -16,3 +16,8 @@ Garantías de diseño (verificables con `grep` en este directorio):
 Control por el monitor serie (la TFT no es táctil): `help`, `info`, `scan [s]`, `list`, `gatt <n>`.
 
 Limitaciones: un escaneo bloquea el bucle (el uptime de la pantalla se detiene unos segundos). Un periférico conectado a otro cliente (p. ej. la app del móvil) normalmente deja de anunciarse.
+
+
+## Modo de escucha
+
+`ble_listen.*` se suscribe a las notificaciones de un aparato propio y las registra; **no puede llamar a `writeValue`** (vigilado por `tools/check_ble_write_policy.py`). Ver `docs/LISTEN_MODE.md`. El analizador (`ble_analyzer.*`) sigue sin escribir ni suscribirse a nada.
