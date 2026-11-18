@@ -1,0 +1,6 @@
+{
+  "name": "jbd_protocol",
+  "version": "0.1.0",
+  "description": "Pure C++ encoder/decoder for the READ-ONLY subset of the JBD (Xiaoxiang) BMS protocol. No Arduino/BLE dependencies, host-testable.",
+  "license": "MIT"
+}
