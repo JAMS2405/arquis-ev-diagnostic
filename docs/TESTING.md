@@ -28,6 +28,8 @@ _Esta tabla se actualiza solo con resultados reales._
 
 | S-004 | Compilación de la Etapa 3 inicial (BLE Analyzer + comandos serie), rama `feat/stage-3-ble` | Contenedor Linux, PlatformIO Core 6.2.0; NimBLE-Arduino 2.5.2 | **Pasa**: `[SUCCESS]`. RAM 13,3 % (43 616 B), Flash 8,9 % (581 515 B). 0 advertencias en `src/`; 1 advertencia dentro de la librería NimBLE (`availableForWrite` oculto). Comprobación por `grep` en `src/ble/`: sin `writeValue`, `subscribe`, `pair`, `setSecurity`, ni servidor GATT/advertising. **No ejecutado en hardware.** | 2026-11-18 |
 
+| S-005 | Compilación de `feat/stage-3-ble` con la plataforma fijada `espressif32@7.0.1` (Arduino core 2.0.17), la misma que usa el PC del usuario | Contenedor Linux, PlatformIO Core 6.2.0 | **Pasa**: `[SUCCESS]`, RAM 12,3 % (40 420 B, idéntico al log del usuario), Flash 8,4 % (547 233 B). El usuario compiló la misma rama en su PC con el mismo resultado de memoria (el upload falló por COM4 ocupado, no por el firmware). **No ejecutado en hardware.** | 2026-11-18 |
+
 > Una compilación exitosa **solo demuestra que el código compila**. No valida arranque, pines, pantalla ni ningún hardware.
 
 ## 3. Pruebas pendientes
