@@ -74,6 +74,21 @@ Reglas transversales:
 - [ ] Escaneo y GATT funcionan desde el teléfono. *(hardware, P-053)*
 - [ ] Efecto del Wi-Fi sobre la fiabilidad del escaneo medido y documentado. *(hardware, P-052)*
 
+## Etapa 3c — Reporte de BMS JBD (alcance ampliado por el usuario)
+
+**Estado:** implementado y compilando en la rama `feat/bms-jbd-report`. Pendiente de validación con un BMS real; no fusionada a `main`. Detalle en `BMS_JBD.md`.
+
+**Alcance:** lectura de un BMS JBD propio por BLE mediante 3 peticiones fijas de lectura; reporte con ciclos, modelo, celdas, temperaturas, protecciones y capacidad; descarga `.md`/`.json`. **Fuera de alcance:** parámetros de configuración, modo de fábrica, control de MOSFET, escritura de cualquier tipo, SOH calculado.
+
+**Criterios de aceptación**
+- [x] Biblioteca de protocolo pura, que solo puede construir peticiones de lectura, con pruebas en el PC (S-009).
+- [x] Única escritura BLE del proyecto aislada en `src/bms` y vigilada por `tools/check_ble_write_policy.py` (S-008).
+- [x] Interfaz web y reporte verificados contra un servidor simulado (S-010).
+- [ ] Reporte de un BMS JBD real sin errores. *(hardware, P-060)*
+- [ ] Valores coinciden con la app oficial del BMS. *(hardware, P-061)*
+- [ ] El BMS conserva su estado (MOSFET, protecciones) y la app oficial sigue conectando. *(hardware, P-062)*
+- [ ] Signo de la corriente verificado con carga real. *(hardware, P-064)*
+
 ## Etapa 4 — Electrical Monitor
 
 **Alcance:** lectura de señales de baja tensión mediante entradas **protegidas** (ADC1), con calibración y filtrado.

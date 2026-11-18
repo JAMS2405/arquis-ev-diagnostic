@@ -55,6 +55,7 @@ credentials.h
 # Review manually before publishing any capture.
 # ---------------------------------------------------------------
 captures/
+reports/
 *.cap
 *.pcap
 *.pcapng

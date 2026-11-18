@@ -34,6 +34,10 @@ _Esta tabla se actualiza solo con resultados reales._
 | S-006 | Compilación con la interfaz web (`feat/web-ui`): AP Wi-Fi + servidor HTTP + escaneo BLE asíncrono | Contenedor Linux, PlatformIO Core 6.2.0, `espressif32@7.0.1` | **Pasa**: `[SUCCESS]`, 0 errores. RAM 19,0 % (62 248 B), Flash 14,8 % (972 049 B). También compila con `secrets.h` presente; `git` lo ignora. **No ejecutado en hardware.** | 2026-11-18 |
 | S-007 | Página web en Chromium headless (Playwright) contra un servidor **simulado** (no el ESP32), viewport 390×800 | Contenedor Linux | **Pasa**: escaneo, lista de 3 dispositivos, botón GATT solo en los conectables, resultado, sin errores JS, sin scroll horizontal. Con nombres/UUID maliciosos (`<img onerror>`, `<script>`) se muestran como texto y no se ejecuta nada. **Valida la lógica de la página, no el firmware ni el Wi-Fi.** | 2026-11-18 |
 
+| S-008 | Compilación del reporte JBD (`feat/bms-jbd-report`) y comprobación de la política de escritura BLE | Contenedor Linux, `espressif32@7.0.1` | **Pasa**: `[SUCCESS]`, RAM 19,3 % (63 112 B), Flash 15,1 % (990 189 B). `tools/check_ble_write_policy.py`: OK (solo `src/bms/jbd_bms.cpp` contiene `writeValue`/`subscribe`). **No ejecutado en hardware.** | 2026-11-18 |
+| S-009 | Pruebas unitarias en el PC del protocolo JBD (`pio test -e native`, Unity) | Contenedor Linux, g++ | **Pasa 12/12**: peticiones `0x03/0x04/0x05` byte a byte (la `0x04` es idéntica a la observada en un BMS real), toda petición es de lectura (`0xA5`, long. 0), trama de ejemplo de la documentación pública (checksum `FBFF`) decodificada, reensamblado de notificaciones partidas, rechazo de tramas corruptas, corriente negativa, estadísticas de celdas, saneado de texto. **Valida la lógica, no el BMS real.** | 2026-11-18 |
+| S-010 | Reporte BMS en la página web (Chromium headless) contra un servidor **simulado** | Contenedor Linux | **Pasa**: aviso de confirmación, 14 celdas, mín/máx resaltadas, protección activa, balanceo, descarga `.md`/`.json` con fecha y nota de límites, caso de error, sin errores JS, sin scroll horizontal; texto malicioso mostrado como texto. **No valida el ESP32.** | 2026-11-18 |
+
 > Una compilación exitosa **solo demuestra que el código compila**. No valida arranque, pines, pantalla ni ningún hardware.
 
 ## 3. Pruebas pendientes
@@ -67,6 +71,13 @@ _Esta tabla se actualiza solo con resultados reales._
 - [ ] P-052 Escaneo BLE con Wi-Fi activo: comparar número de dispositivos con y sin cliente conectado.
 - [ ] P-053 `Explorar GATT` desde el teléfono sobre un dispositivo de prueba.
 - [ ] P-054 Estabilidad: 10 minutos con la web abierta sin reinicios ni cuelgues.
+
+### Reporte BMS JBD
+- [ ] P-060 Reporte de un BMS JBD real: info básica, celdas y nombre sin errores.
+- [ ] P-061 Comparar con la app oficial del BMS: tensión, ciclos, celdas y capacidad coinciden.
+- [ ] P-062 Tras leer, el BMS conserva su estado (MOSFET y protecciones) y la app oficial sigue conectando.
+- [ ] P-063 Repetibilidad: 5 lecturas seguidas sin fallos ni valores incoherentes.
+- [ ] P-064 Signo de la corriente verificado cargando y descargando la batería.
 
 ### Integración
 - [ ] P-040 Operación concurrente de UART, BLE y ADC.

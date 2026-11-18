@@ -24,7 +24,8 @@ Dispositivo anunciado como un modelo `SP14S…` de la familia JBD. Dirección MA
 - **Servicio `00010203-0405-0607-0809-0a0b0c0d1912`**: según documentación pública es el servicio de **actualización de firmware (OTA) de Telink**. **Escribir ahí puede dejar el módulo inservible.**
 
 ## Reglas derivadas
-1. La herramienta **nunca escribe** en ninguna característica. Para este BMS eso significa que **no se pueden obtener datos en vivo** (hay que enviar una petición a `FF02` y suscribirse a `FF01`, y ambas cosas son escrituras GATT).
-2. Leer datos en vivo de un BMS es **«BMS avanzado»**, fuera del alcance de la v1 (ver README). Si se quisiera, sería un cambio de alcance explícito, con lista blanca estricta de tramas de solo lectura y solo sobre una batería propia.
+1. El **analizador BLE** (`scan`, `gatt`) **nunca escribe** en ninguna característica.
+2. Para obtener datos en vivo de un BMS JBD hay que enviar una petición a `FF02` y suscribirse a `FF01`; ambas son escrituras GATT. Por decisión explícita del usuario (batería propia) se añadió el módulo `src/bms` (Etapa 3c) como **única excepción**, limitada por construcción a 3 peticiones de lectura. Ver `BMS_JBD.md`.
 3. Conectarse (aunque sea solo lectura) únicamente a dispositivos propios o con permiso.
-4. La salida de `gatt` etiqueta los UUID conocidos y marca el servicio OTA de Telink con `NEVER WRITE`.
+4. Nunca se escribe en el servicio OTA de Telink, ni siquiera desde el módulo BMS.
+5. La salida de `gatt` etiqueta los UUID conocidos y marca el servicio OTA de Telink con `NEVER WRITE`.

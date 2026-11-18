@@ -44,7 +44,9 @@ Tres módulos, en este orden de prioridad:
 | 2 | **BLE Analyzer** | Descubrimiento de dispositivos BLE y exploración de servicios/características GATT. | **Sin escrituras** ni modificación de parámetros del vehículo. |
 | 3 | **Electrical Monitor** | Medición de señales de baja tensión mediante entradas protegidas. | Solo señales de baja tensión y con protección; **nunca batería directa**. |
 
-**Fuera de alcance en v1:** CAN, RS485, BMS avanzado, diagnóstico multimarca.
+**Fuera de alcance en v1:** CAN, RS485, BMS avanzado (configuración, modo de fábrica, control de MOSFET), diagnóstico multimarca.
+
+**Ampliación decidida por el usuario:** reporte de **solo lectura** de un BMS JBD propio por BLE (Etapa 3c, [`docs/BMS_JBD.md`](docs/BMS_JBD.md)). Es la única excepción a «el BLE no escribe», está acotada por construcción y vigilada por `tools/check_ble_write_policy.py`.
 
 ## Hardware
 
@@ -72,6 +74,7 @@ src/
 ├── uart/            UART Analyzer — captura pasiva (pendiente)
 ├── ble/             BLE Analyzer — escaneo y GATT de solo lectura (pendiente)
 ├── electrical/      Electrical Monitor — ADC con entradas protegidas (pendiente)
+├── bms/             Reporte de BMS JBD por BLE (única excepción de escritura, 3 lecturas fijas)
 ├── web/             Interfaz web para teléfono: Wi-Fi AP + HTTP, solo lectura
 ├── storage/         Almacenamiento de capturas (pendiente)
 └── diagnostics/     Análisis e interpretación de datos (pendiente)
@@ -115,6 +118,7 @@ El estado real de compilación y pruebas se registra en [`docs/TESTING.md`](docs
 | 2 | UART Analyzer (pasivo) | Pendiente |
 | 3 | BLE Analyzer | Versión inicial (rama `feat/stage-3-ble`), compila; **pendiente de validación en hardware** |
 | 3b | Interfaz web para teléfono (Wi-Fi AP, solo lectura) | Versión inicial (rama `feat/web-ui`), compila; **pendiente de validación en hardware** |
+| 3c | Reporte de BMS JBD (lectura, batería propia) | Versión inicial (rama `feat/bms-jbd-report`), compila y pasa 12 pruebas en PC; **pendiente de validación con un BMS real** |
 | 4 | Electrical Monitor | Pendiente |
 | 5 | Almacenamiento e integración | Pendiente |
 
@@ -139,6 +143,7 @@ Resumen (ver documento completo en [`docs/ELECTRICAL_SAFETY.md`](docs/ELECTRICAL
 | [`docs/ELECTRICAL_SAFETY.md`](docs/ELECTRICAL_SAFETY.md) | Qué se puede conectar y qué requiere protección |
 | [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md) | Etapas y criterios de aceptación |
 | [`docs/TESTING.md`](docs/TESTING.md) | Pruebas ejecutadas, pendientes y simuladas |
+| [`docs/BMS_JBD.md`](docs/BMS_JBD.md) | Reporte de BMS JBD: alcance, seguridad y límites |
 | [`docs/WEB_UI.md`](docs/WEB_UI.md) | Uso, clave y API de la interfaz web |
 
 ## Licencia
