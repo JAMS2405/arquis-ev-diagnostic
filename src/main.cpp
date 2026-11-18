@@ -1,22 +1,69 @@
 /**
- * ARQUIS EV DIAGNOSTIC — Stage 0 boot skeleton.
+ * ARQUIS EV DIAGNOSTIC — Stage 1: firmware base and display.
  *
- * Intentionally minimal: prints an identification banner only.
- * No module (display, UART, BLE, electrical, storage, diagnostics) is
- * implemented yet. Implementation starts at Stage 1 with explicit approval.
+ * Boots, reports flash/PSRAM over serial, and shows a boot screen followed by
+ * a read-only system status screen on the ILI9341 TFT.
+ *
+ * UART / BLE / electrical / storage / diagnostics modules are NOT implemented
+ * yet (Stages 2-5). Nothing here transmits to or measures any vehicle signal.
  */
 
 #include <Arduino.h>
 
 #include "config/project_config.h"
+#include "display/display.h"
+
+namespace {
+
+constexpr unsigned long kBootScreenMs      = 1500;
+constexpr unsigned long kStatusRefreshMs   = 1000;
+unsigned long g_lastRefresh = 0;
+
+display::StatusData collectStatus() {
+    display::StatusData d;
+    d.project_name      = ARQUIS_PROJECT_NAME;
+    d.fw_version        = ARQUIS_FW_VERSION;
+    d.uptime_s          = millis() / 1000UL;
+    d.heap_free_bytes   = ESP.getFreeHeap();
+    d.psram_total_bytes = psramFound() ? ESP.getPsramSize() : 0;
+    d.flash_size_bytes  = ESP.getFlashChipSize();
+    return d;
+}
+
+void reportSystemOverSerial(const display::StatusData& d) {
+    Serial.printf("%s v%s\n", d.project_name, d.fw_version);
+    Serial.printf("Chip:  %s rev %d, %d core(s)\n", ESP.getChipModel(), ESP.getChipRevision(),
+                  ESP.getChipCores());
+    Serial.printf("Flash: %lu bytes\n", (unsigned long)d.flash_size_bytes);
+    if (d.psram_total_bytes == 0) {
+        Serial.println("PSRAM: NOT FOUND");
+    } else {
+        Serial.printf("PSRAM: %lu bytes\n", (unsigned long)d.psram_total_bytes);
+    }
+    Serial.printf("Heap:  %lu bytes free\n", (unsigned long)d.heap_free_bytes);
+}
+
+}  // namespace
 
 void setup() {
     Serial.begin(config::SERIAL_BAUD);
     delay(500);
-    Serial.printf("%s v%s\n", ARQUIS_PROJECT_NAME, ARQUIS_FW_VERSION);
-    Serial.println("Stage 0: skeleton only. No modules implemented.");
+
+    const display::StatusData status = collectStatus();
+    reportSystemOverSerial(status);
+
+    if (!display::begin()) {
+        Serial.println("Display: init FAILED");
+        return;
+    }
+    display::showBoot(ARQUIS_PROJECT_NAME, ARQUIS_FW_VERSION);
+    delay(kBootScreenMs);
+    display::showStatusLayout(status);
 }
 
 void loop() {
-    delay(1000);
+    if (millis() - g_lastRefresh >= kStatusRefreshMs) {
+        g_lastRefresh = millis();
+        display::updateStatus(collectStatus());
+    }
 }
