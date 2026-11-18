@@ -62,6 +62,15 @@ th{color:var(--mut);font-weight:500;width:46%}
   <button class="ghost" id="bmsjson" disabled>Descargar .json</button>
 </div>
 
+<h2>Escucha (solo recibe)</h2>
+<div class="row">
+  <select id="lsecs"><option value="20">20 s</option><option value="30" selected>30 s</option><option value="60">60 s</option><option value="120">120 s</option></select>
+  <button class="ghost" id="lstop" disabled>Detener</button>
+  <button class="ghost" id="ldl" disabled>Descargar .txt</button>
+</div>
+<div id="lstat" class="note">Sin sesión. Pulsa «Escuchar» en un dispositivo propio. No se le envía ningún dato.</div>
+<pre id="listen">—</pre>
+
 <h2>Resultado GATT</h2>
 <pre id="out">Pulsa «Explorar GATT» en un dispositivo conectable.</pre>
 <div class="row">
@@ -107,6 +116,10 @@ function render(){
       const b=el('button',null,'Explorar GATT (solo lectura)');
       b.onclick=()=>gatt(i,b);
       c.append(b);
+      const L=el('button','ghost','Escuchar (solo recibe)');
+      L.style.marginLeft='8px';
+      L.onclick=()=>listen(i,L);
+      c.append(L);
       const k=el('button','ghost','Reporte BMS JBD');
       k.style.marginLeft='8px';
       k.onclick=()=>bms(i,k);
@@ -211,6 +224,31 @@ async function bms(i,btn){
 }
 $('bmsmd').onclick=()=>lastBms&&download('reporte-bms-'+Date.now()+'.md',bmsMarkdown(lastBms),'text/markdown');
 $('bmsjson').onclick=()=>lastBms&&download('reporte-bms-'+Date.now()+'.json',JSON.stringify(lastBms,null,2),'application/json');
+let lOff=0,lText='';
+async function listen(i,btn){
+  if(!confirm('Se conectará al dispositivo y se SUSCRIBIRÁ a sus notificaciones para registrar lo que transmite. No se le envía ningún dato. Úsalo solo con aparatos tuyos. ¿Continuar?'))return;
+  btn.disabled=true;lOff=0;lText='';
+  $('listen').textContent='Conectando…';$('ldl').disabled=true;
+  $('listen').scrollIntoView({behavior:'smooth'});
+  try{
+    const r=await fetch('/api/listen?index='+i+'&secs='+$('lsecs').value,{method:'POST'});
+    const o=await r.json();
+    if(!r.ok){$('listen').textContent='No se pudo iniciar: '+(o.error||r.status);btn.disabled=false;return;}
+  }catch(e){$('listen').textContent='Error: '+e.message;btn.disabled=false;return;}
+  $('lstop').disabled=false;
+  pollListen(btn);
+}
+async function pollListen(btn){
+  try{
+    const o=await (await j('/api/listen?offset='+lOff)).json();
+    if(o.chunk){lText+=o.chunk;lOff+=o.chunk.length;$('listen').textContent=lText;}
+    $('lstat').textContent=(o.active?('Escuchando… quedan '+o.secs_left+' s'):'Sesión terminada')+' · '+o.n+' notificaciones · '+o.bytes+' B'+(o.trunc?' · registro lleno (truncado)':'');
+    if(o.active||o.chunk){setTimeout(()=>pollListen(btn),1000);}
+    else{$('lstop').disabled=true;$('ldl').disabled=!lText;btn.disabled=false;}
+  }catch(e){$('lstat').textContent='Sin conexión con el ESP32, reintentando…';setTimeout(()=>pollListen(btn),2000);}
+}
+$('lstop').onclick=async()=>{try{await j('/api/listen/stop',{method:'POST'});}catch(e){}};
+$('ldl').onclick=()=>lText&&download('arquis-escucha-'+Date.now()+'.txt',lText,'text/plain');
 $('scan').onclick=startScan;
 $('copy').onclick=()=>{
   const r=document.createRange();r.selectNodeContents($('out'));

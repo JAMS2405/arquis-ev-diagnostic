@@ -5,6 +5,7 @@
 #include <esp_system.h>
 
 #include "ble/ble_analyzer.h"
+#include "ble/ble_listen.h"
 #include "bms/jbd_bms.h"
 #include "config/project_config.h"
 #include "web/web_page.h"
@@ -70,6 +71,8 @@ void appendJsonString(String& out, const char* s) {
         if (c == '"' || c == '\\') {
             out += '\\';
             out += static_cast<char>(c);
+        } else if (c == '\n') {
+            out += "\\n";  // valid JSON escape; the UI renders it with textContent
         } else if (c < 0x20 || c >= 0x7F) {
             out += '?';
         } else {
@@ -121,6 +124,10 @@ void handleScan() {
         const long v = g_server.arg("secs").toInt();
         if (v > 0) secs = (v > (long)kMaxScanSecs) ? kMaxScanSecs : (uint32_t)v;
     }
+    if (ble_listen::isActive()) {
+        sendJson(409, "{\"error\":\"listen session in progress\"}");
+        return;
+    }
     if (!ble_analyzer::startScan(secs * 1000UL)) {
         sendJson(409, "{\"error\":\"scan not started (already running or BLE unavailable)\"}");
         return;
@@ -161,8 +168,8 @@ void handleGatt() {
         sendJson(405, "{\"error\":\"POST required\"}");
         return;
     }
-    if (ble_analyzer::isScanning()) {
-        sendJson(409, "{\"error\":\"scan in progress\"}");
+    if (ble_analyzer::isScanning() || ble_listen::isActive()) {
+        sendJson(409, "{\"error\":\"scan or listen session in progress\"}");
         return;
     }
     if (!g_server.hasArg("index")) {
@@ -188,8 +195,8 @@ void handleBms() {
         sendJson(405, "{\"error\":\"POST required\"}");
         return;
     }
-    if (ble_analyzer::isScanning()) {
-        sendJson(409, "{\"error\":\"scan in progress\"}");
+    if (ble_analyzer::isScanning() || ble_listen::isActive()) {
+        sendJson(409, "{\"error\":\"scan or listen session in progress\"}");
         return;
     }
     if (!g_server.hasArg("index")) {
@@ -204,6 +211,65 @@ void handleBms() {
     static jbd_bms::Report report;
     jbd_bms::readReport(index, report);
     sendJson(200, jbd_bms::toJson(report));
+}
+
+// Listen-only mode (see ble/ble_listen.h): POST starts, GET polls, /stop ends.
+void handleListen() {
+    if (g_server.method() == HTTP_POST) {
+        if (ble_analyzer::isScanning()) {
+            sendJson(409, "{\"error\":\"scan in progress\"}");
+            return;
+        }
+        if (!g_server.hasArg("index")) {
+            sendJson(400, "{\"error\":\"missing index\"}");
+            return;
+        }
+        const int index = g_server.arg("index").toInt();
+        const long secs = g_server.hasArg("secs") ? g_server.arg("secs").toInt() : 30;
+        char err[48] = "";
+        if (!ble_listen::start(index, secs > 0 ? (uint32_t)secs : 30, err, sizeof(err))) {
+            String j = "{\"error\":";
+            appendJsonString(j, err);
+            j += "}";
+            sendJson(409, j);
+            return;
+        }
+        sendJson(202, "{\"started\":true}");
+        return;
+    }
+    if (g_server.method() != HTTP_GET) {
+        sendJson(405, "{\"error\":\"GET or POST required\"}");
+        return;
+    }
+    size_t offset = 0;
+    if (g_server.hasArg("offset")) {
+        const long v = g_server.arg("offset").toInt();
+        if (v > 0) offset = (size_t)v;
+    }
+    const ble_listen::Status st = ble_listen::status();
+    const String chunk = ble_listen::textFrom(offset, 3000);
+    String j;
+    j.reserve(chunk.length() + 160);
+    j += "{\"active\":";
+    j += st.active ? "true" : "false";
+    j += ",\"secs_left\":" + String(st.secs_left);
+    j += ",\"n\":" + String(st.notifications);
+    j += ",\"bytes\":" + String(st.bytes);
+    j += ",\"trunc\":";
+    j += st.truncated ? "true" : "false";
+    j += ",\"chunk\":";
+    appendJsonString(j, chunk.c_str());
+    j += "}";
+    sendJson(200, j);
+}
+
+void handleListenStop() {
+    if (g_server.method() != HTTP_POST) {
+        sendJson(405, "{\"error\":\"POST required\"}");
+        return;
+    }
+    ble_listen::stop();
+    sendJson(200, "{\"stopped\":true}");
 }
 
 void handleNotFound() { sendJson(404, "{\"error\":\"not found\"}"); }
@@ -224,6 +290,8 @@ bool begin() {
     g_server.on("/api/devices", HTTP_GET, handleDevices);
     g_server.on("/api/gatt", HTTP_ANY, handleGatt);
     g_server.on("/api/bms", HTTP_ANY, handleBms);
+    g_server.on("/api/listen", HTTP_ANY, handleListen);
+    g_server.on("/api/listen/stop", HTTP_ANY, handleListenStop);
     g_server.onNotFound(handleNotFound);
     g_server.begin();
 

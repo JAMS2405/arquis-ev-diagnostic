@@ -11,6 +11,9 @@
  *   list           reprint the last scan result
  *   gatt <index>   connect to device <index> of the last scan and print its GATT
  *                  tree, reading ONLY readable characteristics. NEVER writes.
+ *   listen <index> [secs]  LISTEN-ONLY: subscribe to the device's notifications and log
+ *                  what it sends. Sends NO data to the device. Own devices only.
+ *   stoplisten     end a listen session
  *   jbd <index>    JBD BMS report. Sends 3 fixed standard READ requests (opt-in,
  *                  src/bms). Only for batteries you own.
  *
@@ -22,6 +25,7 @@
 #include <Arduino.h>
 
 #include "ble/ble_analyzer.h"
+#include "ble/ble_listen.h"
 #include "bms/jbd_bms.h"
 #include "config/console.h"
 #include "config/project_config.h"
@@ -41,6 +45,8 @@ constexpr uint32_t kDefaultScanSecs      = 8;
 constexpr uint32_t kMaxScanSecs          = 30;
 
 bool g_webOk                  = false;
+bool g_listenStream           = false;
+size_t g_listenOffset         = 0;
 unsigned long g_lastRefresh   = 0;
 unsigned long g_lastHeartbeat = 0;
 bool g_displayOk              = false;
@@ -80,6 +86,8 @@ void printHelp() {
     out.println("  scan [secs]   BLE scan (default 8, max 30)");
     out.println("  list          reprint last scan");
     out.println("  gatt <index>  read-only GATT exploration of a scanned device");
+    out.println("  listen <i> [s] listen-only: log what the device sends (no data is sent to it)");
+    out.println("  stoplisten    end the listen session");
     out.println("  jbd <index>   JBD BMS report (sends 3 standard READ requests; own batteries only)");
     out.println("  wifi          show the web UI access (SSID, password, URL)");
 }
@@ -124,6 +132,13 @@ void handleCommand(const String& line) {
     cmd.trim();
     if (cmd.length() == 0) return;
 
+    if (ble_listen::isActive() && cmd != "stoplisten" && cmd != "help" && cmd != "info" &&
+        cmd != "wifi") {
+        out.println("A listen session is running. Type 'stoplisten' first.");
+        out.println("> ready");
+        return;
+    }
+
     if (cmd == "help") {
         printHelp();
     } else if (cmd == "info") {
@@ -136,6 +151,31 @@ void handleCommand(const String& line) {
             if (v > 0) secs = (v > (long)kMaxScanSecs) ? kMaxScanSecs : (uint32_t)v;
         }
         cmdScan(secs);
+    } else if (cmd == "stoplisten") {
+        ble_listen::stop();
+    } else if (cmd.startsWith("listen")) {
+        const String arg = cmd.substring(6);
+        int idx = -1;
+        long secs = 30;
+        const int sp = arg.indexOf(' ', 1);
+        if (arg.length() > 0) {
+            idx = (int)arg.toInt();
+            if (sp > 0) secs = arg.substring(sp).toInt();
+        }
+        if (arg.length() == 0) {
+            out.println("usage: listen <index> [secs]  (own devices only; sends NO data)");
+        } else if (!g_bleOk) {
+            out.println("BLE not available");
+        } else {
+            char err[48] = "";
+            if (ble_listen::start(idx, secs > 0 ? (uint32_t)secs : 30, err, sizeof(err))) {
+                g_listenStream = true;
+                g_listenOffset = 0;
+                out.println("Listening (type 'stoplisten' to end)...");
+                return;  // the loop streams the log; it prints '> ready' at the end
+            }
+            out.printf("listen failed: %s\n", err);
+        }
     } else if (cmd.startsWith("jbd")) {
         const String arg = cmd.substring(3);
         if (arg.length() == 0) {
@@ -172,6 +212,20 @@ void handleCommand(const String& line) {
     restoreStatusScreen();
     // keep scan view if the user just scanned
     if (cmd.startsWith("scan") || cmd == "list") showScanOnDisplay();
+}
+
+// Streams the listen log to the console while a session runs, then prints the prompt.
+void streamListen() {
+    if (!g_listenStream) return;
+    const String t = ble_listen::textFrom(g_listenOffset, 400);
+    if (t.length() > 0) {
+        console::out().print(t);
+        g_listenOffset += t.length();
+    } else if (!ble_listen::isActive()) {
+        g_listenStream = false;
+        console::out().println("> ready");
+        restoreStatusScreen();
+    }
 }
 
 void pollSerialCommands() {
@@ -229,6 +283,8 @@ void setup() {
 void loop() {
     pollSerialCommands();
     web::loop();
+    ble_listen::poll();
+    streamListen();
 
     if (g_displayOk && millis() - g_lastRefresh >= kStatusRefreshMs) {
         g_lastRefresh = millis();
