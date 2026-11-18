@@ -15,6 +15,7 @@ Este documento separa estrictamente tres categorías. **No se registra como ejec
 | H-001 | Primer flasheo de la Etapa 1 (commit `28be70d`) y monitor serie en COM5 a 115200 | ESP32-S3 real, conector USB y cableado de la TFT sin confirmar | **Fallo / no concluyente**: sin salida en el monitor tras RESET y la pantalla TFT no encendió. Causa sin determinar. Hipótesis: `Serial` iba solo al USB nativo (`CDC_ON_BOOT=1`) y el conector usado pudo ser el del puente UART; cableado de la TFT a los pines provisionales sin confirmar. | 2026-11-18 |
 | H-002 | Segundo flasheo de la Etapa 1 (commit `60d2feb`, consola dual) y monitor serie en COM4 a 115200 | ESP32-S3 real, informado por el usuario | **Pasa (arranque y memoria)**. Salida literal: `ARQUIS EV DIAGNOSTIC v0.1.0-stage1`; `Chip: ESP32-S3 rev 0, 2 core(s)`; `Flash: 16777216 bytes` (16 MB); `PSRAM: 8386279 bytes` (≈8 MB); `Heap: 366848 bytes free`. Cierra P-001 y P-002. | 2026-11-18 |
 | H-003 | Pantalla TFT con el firmware de H-002 | ESP32-S3 real, informado por el usuario | **Parcial, con defectos de software**: la foto del usuario muestra la pantalla ILI9341 funcionando en vertical, con el uptime avanzando (`00:02:21`), Heap 358 KB, PSRAM 7.99 MB y Flash 16.00 MB. Defectos observados: (1) el título se cortaba («ARQUIS EV DIAGNOSTI», la «C» pasaba a la línea siguiente); (2) el valor de FW se cortaba («0.1.0-stag») y la «e» invadía la fila de Uptime. Causa: texto más ancho que el área disponible. Corregido en el commit siguiente; pendiente de reflashear y confirmar (P-004). Por mostrar imagen, quedan funcionales SCLK, MOSI, CS, DC y RST con los pines de `pins_config.h`; MISO y BL (14) siguen sin confirmar. | 2026-11-18 |
+| H-004 | Escaneo BLE y exploración GATT de solo lectura sobre un dispositivo real: un BMS JBD cercano (**no es la scooter**) | ESP32-S3 real, firmware de la rama BLE/web; interfaz usada (serie o web) sin confirmar | **Pasa**: el escaneo lo encontró, se conectó, enumeró 5 servicios y sus características, leyó solo las que declaran READ y se desconectó sin errores. No se escribió nada. Salida y análisis en `BLE_NOTES.md`. No prueba la scooter ni la web por sí sola. | 2026-11-18 |
 | — | Resto de pruebas sobre hardware: ninguna ejecutada | — | — | — |
 
 _Esta tabla se actualiza solo con resultados reales._
@@ -51,8 +52,8 @@ _Esta tabla se actualiza solo con resultados reales._
 - [ ] P-014 Confirmación de que no existe transmisión hacia el vehículo.
 
 ### BLE Analyzer
-- [ ] P-020 Descubrimiento de un dispositivo BLE de prueba (comando `scan`).
-- [ ] P-021 Lectura de servicios y características GATT.
+- [x] P-020 Descubrimiento de un dispositivo BLE de prueba (H-004: BMS JBD cercano).
+- [x] P-021 Lectura de servicios y características GATT (H-004).
 - [ ] P-022 Descubrimiento/exploración de BLE en la Evobike S13-2 (solo lectura).
 
 ### Electrical Monitor
