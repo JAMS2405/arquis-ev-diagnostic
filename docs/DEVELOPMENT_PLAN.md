@@ -89,6 +89,18 @@ Reglas transversales:
 - [ ] El BMS conserva su estado (MOSFET, protecciones) y la app oficial sigue conectando. *(hardware, P-062)*
 - [ ] Signo de la corriente verificado con carga real. *(hardware, P-064)*
 
+## Etapa 3d — Soporte incremental de otras marcas de BMS
+
+**Estado:** planificada; sin código. Procedimiento y criterios en `BMS_ONBOARDING.md`.
+
+**Alcance:** una marca a la vez, a partir de datos reales de una unidad y con la app oficial y el multímetro como referencia. Misma regla que 3c: solo lecturas, baterías propias o con permiso. Las marcas sin protocolo viable por BLE (cifrado, autenticación) pueden quedar fuera o resolverse por cable en una etapa posterior.
+
+**Criterios de aceptación (por marca)**
+- Fichas de datos recolectadas (`BMS_ONBOARDING.md`).
+- Biblioteca de protocolo pura con pruebas en el PC hechas con tramas reales.
+- Lista cerrada de peticiones de lectura y política de escritura actualizada. *(hardware)*
+- Valores comparados con la app oficial y el multímetro en una unidad real. *(hardware)*
+
 ## Etapa 4 — Electrical Monitor
 
 **Alcance:** lectura de señales de baja tensión mediante entradas **protegidas** (ADC1), con calibración y filtrado.

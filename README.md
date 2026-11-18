@@ -143,6 +143,7 @@ Resumen (ver documento completo en [`docs/ELECTRICAL_SAFETY.md`](docs/ELECTRICAL
 | [`docs/ELECTRICAL_SAFETY.md`](docs/ELECTRICAL_SAFETY.md) | Qué se puede conectar y qué requiere protección |
 | [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md) | Etapas y criterios de aceptación |
 | [`docs/TESTING.md`](docs/TESTING.md) | Pruebas ejecutadas, pendientes y simuladas |
+| [`docs/BMS_ONBOARDING.md`](docs/BMS_ONBOARDING.md) | Cómo incorporar una marca nueva de BMS: ficha de datos y criterios |
 | [`docs/BMS_JBD.md`](docs/BMS_JBD.md) | Reporte de BMS JBD: alcance, seguridad y límites |
 | [`docs/WEB_UI.md`](docs/WEB_UI.md) | Uso, clave y API de la interfaz web |
 
