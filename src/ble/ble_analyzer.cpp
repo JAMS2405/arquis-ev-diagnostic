@@ -48,17 +48,20 @@ bool begin() {
     return true;
 }
 
-int scan(uint32_t duration_ms) {
-    if (!g_initialized) return 0;
-    g_count = 0;
+namespace {
 
-    NimBLEScan* scanner = NimBLEDevice::getScan();
+bool g_asyncScanActive = false;
+
+void configureScanner(NimBLEScan* scanner) {
     scanner->setActiveScan(true);  // request scan responses (names, extra data)
     scanner->setInterval(100);
     scanner->setWindow(99);
-    scanner->clearResults();
+}
 
-    NimBLEScanResults results = scanner->getResults(duration_ms, false);
+// Copies the scanner's current results into g_devices (sorted by RSSI).
+void collectResults(NimBLEScan* scanner) {
+    NimBLEScanResults results = scanner->getResults();
+    g_count = 0;
 
     const int found = results.getCount();
     for (int i = 0; i < found && g_count < kMaxDevices; i++) {
@@ -90,7 +93,45 @@ int scan(uint32_t duration_ms) {
 
     std::sort(g_devices, g_devices + g_count,
               [](const DeviceInfo& a, const DeviceInfo& b) { return a.rssi > b.rssi; });
+}
+
+}  // namespace
+
+int scan(uint32_t duration_ms) {
+    if (!g_initialized) return 0;
+    NimBLEScan* scanner = NimBLEDevice::getScan();
+    configureScanner(scanner);
+    scanner->clearResults();
+    scanner->getResults(duration_ms, false);  // blocking
+    collectResults(scanner);
     return g_count;
+}
+
+bool startScan(uint32_t duration_ms) {
+    if (!g_initialized) return false;
+    NimBLEScan* scanner = NimBLEDevice::getScan();
+    if (scanner->isScanning()) return false;
+    configureScanner(scanner);
+    scanner->clearResults();
+    g_asyncScanActive = scanner->start(duration_ms, false);
+    return g_asyncScanActive;
+}
+
+bool isScanning() { return g_initialized && NimBLEDevice::getScan()->isScanning(); }
+
+void stopScan() {
+    if (!g_initialized) return;
+    NimBLEScan* scanner = NimBLEDevice::getScan();
+    if (scanner->isScanning()) scanner->stop();
+}
+
+bool pollScan() {
+    if (!g_initialized || !g_asyncScanActive) return false;
+    NimBLEScan* scanner = NimBLEDevice::getScan();
+    if (scanner->isScanning()) return false;
+    g_asyncScanActive = false;
+    collectResults(scanner);
+    return true;
 }
 
 int deviceCount() { return g_count; }

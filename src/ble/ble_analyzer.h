@@ -37,6 +37,15 @@ bool begin();
 /// strongest first). Blocking. Returns the number of devices found.
 int scan(uint32_t duration_ms);
 
+/// Non-blocking scan: starts an active scan and returns immediately.
+/// Call pollScan() regularly; the stored list is replaced when it finishes.
+bool startScan(uint32_t duration_ms);
+bool isScanning();
+/// Stops a running scan (results so far are kept). Safe if no scan is running.
+void stopScan();
+/// Finalizes a finished async scan. Returns true once, when new results landed.
+bool pollScan();
+
 int deviceCount();
 const DeviceInfo* device(int index);
 
