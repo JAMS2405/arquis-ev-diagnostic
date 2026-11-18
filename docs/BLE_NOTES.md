@@ -25,7 +25,7 @@ Dispositivo anunciado como un modelo `SP14S…` de la familia JBD. Dirección MA
 
 ## H-005 — dispositivo anunciado como `lsrt`
 
-Resultado descargado desde la web. Dirección MAC omitida a propósito. **El usuario no indicó de qué aparato es** (¿Evobike, otro?); no se asume.
+Resultado descargado desde la web. Dirección MAC omitida a propósito. **El usuario confirmó que es su Evobike S13-2** y que el resultado se obtuvo desde la web en el teléfono. Hipótesis (sin verificar): corresponde al módulo BLE de la pantalla (`Orient Sunteh FLT_T3`, ver `HARDWARE.md`).
 
 | Servicio | Característica | Propiedades | Valor leído |
 |---|---|---|---|
@@ -45,11 +45,12 @@ Resultado descargado desde la web. Dirección MAC omitida a propósito. **El usu
 - El NUS también lo usan otros fabricantes, incluidas algunas scooters. Por sí solo **no identifica la marca**.
 
 ### Consecuencia
-Para ver qué envía este dispositivo habría que **suscribirse** a `…0003` (escribe el CCCD) y, para pedirle datos, escribir en `…0002`. Ambas cosas salen del alcance del analizador. Enviar bytes inventados a un controlador de vehículo puede cambiar su configuración, así que **no se envían tramas adivinadas**: el protocolo se aprende de capturas reales (registro HCI del teléfono con la app oficial, o línea UART) y solo se enviarán peticiones de lectura ya conocidas.
+Para ver qué envía este dispositivo hay que **suscribirse** a `…0003` (escribe el CCCD); para pedirle datos habría que escribir en `…0002`. Lo primero se resolvió con el **modo de escucha** (`LISTEN_MODE.md`), aprobado por el usuario para su Evobike. Lo segundo no se hace. Enviar bytes inventados a un controlador de vehículo puede cambiar su configuración, así que **no se envían tramas adivinadas**: el protocolo se aprende de capturas reales (registro HCI del teléfono con la app oficial, o línea UART) y solo se enviarán peticiones de lectura ya conocidas.
 
 ## Reglas derivadas
 1. El **analizador BLE** (`scan`, `gatt`) **nunca escribe** en ninguna característica.
 2. Para obtener datos en vivo de un BMS JBD hay que enviar una petición a `FF02` y suscribirse a `FF01`; ambas son escrituras GATT. Por decisión explícita del usuario (batería propia) se añadió el módulo `src/bms` (Etapa 3c) como **única excepción**, limitada por construcción a 3 peticiones de lectura. Ver `BMS_JBD.md`.
 3. Conectarse (aunque sea solo lectura) únicamente a dispositivos propios o con permiso.
 4. Nunca se escribe en el servicio OTA de Telink, ni siquiera desde el módulo BMS.
+   El modo de escucha (`ble_listen`) solo puede suscribirse; no puede llamar a `writeValue`.
 5. La salida de `gatt` etiqueta los UUID conocidos y marca el servicio OTA de Telink con `NEVER WRITE`.

@@ -101,6 +101,19 @@ Reglas transversales:
 - Lista cerrada de peticiones de lectura y política de escritura actualizada. *(hardware)*
 - Valores comparados con la app oficial y el multímetro en una unidad real. *(hardware)*
 
+## Etapa 3e — Escucha de notificaciones BLE (solo recibe)
+
+**Estado:** implementada y compilando en la rama `feat/ble-listen`. Pendiente de validación en la Evobike; no fusionada a `main`. Detalle en `LISTEN_MODE.md`.
+
+**Alcance:** suscribirse a las notificaciones de un aparato propio y registrar lo que transmite, sin enviarle datos. **Fuera de alcance:** cualquier escritura de datos, incluida la característica de comandos del puerto serie BLE.
+
+**Criterios de aceptación**
+- [x] Lógica de formato y estadísticas pura, con pruebas en el PC (S-011).
+- [x] El módulo no puede llamar a `writeValue`; vigilante probado con violaciones deliberadas (S-011).
+- [x] Interfaz web verificada contra un servidor simulado (S-012).
+- [ ] Captura real de la Evobike encendida, descrita sin datos privados. *(hardware, P-070)*
+- [ ] La scooter conserva su estado tras la escucha. *(hardware, P-073)*
+
 ## Etapa 4 — Electrical Monitor
 
 **Alcance:** lectura de señales de baja tensión mediante entradas **protegidas** (ADC1), con calibración y filtrado.

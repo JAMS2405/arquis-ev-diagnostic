@@ -46,7 +46,7 @@ Tres módulos, en este orden de prioridad:
 
 **Fuera de alcance en v1:** CAN, RS485, BMS avanzado (configuración, modo de fábrica, control de MOSFET), diagnóstico multimarca.
 
-**Ampliación decidida por el usuario:** reporte de **solo lectura** de un BMS JBD propio por BLE (Etapa 3c, [`docs/BMS_JBD.md`](docs/BMS_JBD.md)). Es la única excepción a «el BLE no escribe», está acotada por construcción y vigilada por `tools/check_ble_write_policy.py`.
+**Ampliación decidida por el usuario:** reporte de **solo lectura** de un BMS JBD propio por BLE (Etapa 3c, [`docs/BMS_JBD.md`](docs/BMS_JBD.md)). Es una excepción a «el BLE no escribe», acotada por construcción y vigilada por `tools/check_ble_write_policy.py`. La otra es el **modo de escucha** (solo suscripción a notificaciones, sin enviar datos; [`docs/LISTEN_MODE.md`](docs/LISTEN_MODE.md)).
 
 ## Hardware
 
@@ -119,6 +119,7 @@ El estado real de compilación y pruebas se registra en [`docs/TESTING.md`](docs
 | 3 | BLE Analyzer | Versión inicial (rama `feat/stage-3-ble`), compila; **pendiente de validación en hardware** |
 | 3b | Interfaz web para teléfono (Wi-Fi AP, solo lectura) | Versión inicial (rama `feat/web-ui`), compila; **pendiente de validación en hardware** |
 | 3c | Reporte de BMS JBD (lectura, batería propia) | Versión inicial (rama `feat/bms-jbd-report`), compila y pasa 12 pruebas en PC; **pendiente de validación con un BMS real** |
+| 3e | Escucha de notificaciones BLE, solo recibe (Evobike) | Versión inicial (rama `feat/ble-listen`), compila; **pendiente de validación en hardware** |
 | 4 | Electrical Monitor | Pendiente |
 | 5 | Almacenamiento e integración | Pendiente |
 
@@ -143,6 +144,7 @@ Resumen (ver documento completo en [`docs/ELECTRICAL_SAFETY.md`](docs/ELECTRICAL
 | [`docs/ELECTRICAL_SAFETY.md`](docs/ELECTRICAL_SAFETY.md) | Qué se puede conectar y qué requiere protección |
 | [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md) | Etapas y criterios de aceptación |
 | [`docs/TESTING.md`](docs/TESTING.md) | Pruebas ejecutadas, pendientes y simuladas |
+| [`docs/LISTEN_MODE.md`](docs/LISTEN_MODE.md) | Modo de escucha de notificaciones BLE: uso y límites |
 | [`docs/BMS_ONBOARDING.md`](docs/BMS_ONBOARDING.md) | Cómo incorporar una marca nueva de BMS: ficha de datos y criterios |
 | [`docs/BMS_JBD.md`](docs/BMS_JBD.md) | Reporte de BMS JBD: alcance, seguridad y límites |
 | [`docs/WEB_UI.md`](docs/WEB_UI.md) | Uso, clave y API de la interfaz web |

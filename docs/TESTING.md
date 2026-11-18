@@ -16,7 +16,7 @@ Este documento separa estrictamente tres categorías. **No se registra como ejec
 | H-002 | Segundo flasheo de la Etapa 1 (commit `60d2feb`, consola dual) y monitor serie en COM4 a 115200 | ESP32-S3 real, informado por el usuario | **Pasa (arranque y memoria)**. Salida literal: `ARQUIS EV DIAGNOSTIC v0.1.0-stage1`; `Chip: ESP32-S3 rev 0, 2 core(s)`; `Flash: 16777216 bytes` (16 MB); `PSRAM: 8386279 bytes` (≈8 MB); `Heap: 366848 bytes free`. Cierra P-001 y P-002. | 2026-11-18 |
 | H-003 | Pantalla TFT con el firmware de H-002 | ESP32-S3 real, informado por el usuario | **Parcial, con defectos de software**: la foto del usuario muestra la pantalla ILI9341 funcionando en vertical, con el uptime avanzando (`00:02:21`), Heap 358 KB, PSRAM 7.99 MB y Flash 16.00 MB. Defectos observados: (1) el título se cortaba («ARQUIS EV DIAGNOSTI», la «C» pasaba a la línea siguiente); (2) el valor de FW se cortaba («0.1.0-stag») y la «e» invadía la fila de Uptime. Causa: texto más ancho que el área disponible. Corregido en el commit siguiente; pendiente de reflashear y confirmar (P-004). Por mostrar imagen, quedan funcionales SCLK, MOSI, CS, DC y RST con los pines de `pins_config.h`; MISO y BL (14) siguen sin confirmar. | 2026-11-18 |
 | H-004 | Escaneo BLE y exploración GATT de solo lectura sobre un dispositivo real: un BMS JBD cercano (**no es la scooter**) | ESP32-S3 real, firmware de la rama BLE/web; interfaz usada (serie o web) sin confirmar | **Pasa**: el escaneo lo encontró, se conectó, enumeró 5 servicios y sus características, leyó solo las que declaran READ y se desconectó sin errores. No se escribió nada. Salida y análisis en `BLE_NOTES.md`. No prueba la scooter ni la web por sí sola. | 2026-11-18 |
-| H-005 | Exploración GATT de solo lectura de un dispositivo anunciado como `lsrt`, con el resultado **descargado desde la página web** (archivo `arquis-gatt-<marca de tiempo>.txt`, nombre generado por el botón «Descargar») | ESP32-S3 real; dispositivo cliente (teléfono o PC) y dispositivo explorado **sin confirmar por el usuario** | **Pasa**: conectó, enumeró 3 servicios con etiquetas de UUID correctas, leyó solo las características READ y se desconectó. El archivo evidencia que la web (escaneo, GATT y descarga) funcionó. Análisis en `BLE_NOTES.md`. | 2026-11-18 |
+| H-005 | Exploración GATT de solo lectura de la **Evobike S13-2** (anunciada como `lsrt`, confirmado por el usuario) desde la **web en el teléfono**, con el resultado descargado (`arquis-gatt-<marca de tiempo>.txt`) | ESP32-S3 real; teléfono del usuario | **Pasa**: conectó, enumeró 3 servicios con etiquetas de UUID correctas, leyó solo las características READ y se desconectó. El archivo evidencia que la web (escaneo, GATT y descarga) funcionó. Análisis en `BLE_NOTES.md`. | 2026-11-18 |
 | — | Resto de pruebas sobre hardware: ninguna ejecutada | — | — | — |
 
 _Esta tabla se actualiza solo con resultados reales._
@@ -38,6 +38,9 @@ _Esta tabla se actualiza solo con resultados reales._
 | S-008 | Compilación del reporte JBD (`feat/bms-jbd-report`) y comprobación de la política de escritura BLE | Contenedor Linux, `espressif32@7.0.1` | **Pasa**: `[SUCCESS]`, RAM 19,3 % (63 112 B), Flash 15,1 % (990 189 B). `tools/check_ble_write_policy.py`: OK (solo `src/bms/jbd_bms.cpp` contiene `writeValue`/`subscribe`). **No ejecutado en hardware.** | 2026-11-18 |
 | S-009 | Pruebas unitarias en el PC del protocolo JBD (`pio test -e native`, Unity) | Contenedor Linux, g++ | **Pasa 12/12**: peticiones `0x03/0x04/0x05` byte a byte (la `0x04` es idéntica a la observada en un BMS real), toda petición es de lectura (`0xA5`, long. 0), trama de ejemplo de la documentación pública (checksum `FBFF`) decodificada, reensamblado de notificaciones partidas, rechazo de tramas corruptas, corriente negativa, estadísticas de celdas, saneado de texto. **Valida la lógica, no el BMS real.** | 2026-11-18 |
 | S-010 | Reporte BMS en la página web (Chromium headless) contra un servidor **simulado** | Contenedor Linux | **Pasa**: aviso de confirmación, 14 celdas, mín/máx resaltadas, protección activa, balanceo, descarga `.md`/`.json` con fecha y nota de límites, caso de error, sin errores JS, sin scroll horizontal; texto malicioso mostrado como texto. **No valida el ESP32.** | 2026-11-18 |
+
+| S-011 | Compilación del modo de escucha (`feat/ble-listen`), pruebas del PC y vigilante de escrituras | Contenedor Linux, `espressif32@7.0.1` | **Pasa**: `[SUCCESS]`, RAM 29,4 % (96 440 B, incluye el registro de 32 KB), Flash 15,2 % (998 997 B). `pio test -e native` (ahora con `-std=gnu++11`, el estándar del firmware): **19/19** (12 JBD + 7 `notify_log`). `check_ble_write_policy.py` OK y probado con dos violaciones deliberadas (detectadas, exit 1). La primera compilación del firmware **falló** por una lambda de C++14; se corrigió y se alineó el estándar de las pruebas. **No ejecutado en hardware.** | 2026-11-18 |
+| S-012 | Interfaz de escucha en Chromium headless contra un servidor **simulado** | Contenedor Linux | **Pasa**: aviso de confirmación, registro en vivo ensamblado por fragmentos idéntico al del servidor, estado, descarga `.txt` idéntica, caso de error, texto HTML hostil mostrado como texto, sin errores JS. **No valida el ESP32.** | 2026-11-18 |
 
 > Una compilación exitosa **solo demuestra que el código compila**. No valida arranque, pines, pantalla ni ningún hardware.
 
@@ -67,9 +70,9 @@ _Esta tabla se actualiza solo con resultados reales._
 - [ ] P-032 Medición de una señal real de baja tensión del vehículo.
 
 ### Interfaz web
-- [x] P-050 / P-051 Un cliente se conectó al punto de acceso y cargó la página (evidencia indirecta en H-005: archivo descargado desde la página). **Falta confirmar que fue un teléfono** y cuál.
+- [x] P-050 / P-051 El teléfono se conectó al punto de acceso y cargó la página (H-005, confirmado por el usuario).
 - [ ] P-052 Escaneo BLE con Wi-Fi activo: comparar número de dispositivos con y sin cliente conectado.
-- [x] P-053 `Explorar GATT` desde la web sobre un dispositivo real (H-005; cliente sin confirmar).
+- [x] P-053 `Explorar GATT` desde la web del teléfono sobre un dispositivo real (H-005).
 - [ ] P-054 Estabilidad: 10 minutos con la web abierta sin reinicios ni cuelgues.
 
 ### Reporte BMS JBD
@@ -78,6 +81,12 @@ _Esta tabla se actualiza solo con resultados reales._
 - [ ] P-062 Tras leer, el BMS conserva su estado (MOSFET y protecciones) y la app oficial sigue conectando.
 - [ ] P-063 Repetibilidad: 5 lecturas seguidas sin fallos ni valores incoherentes.
 - [ ] P-064 Signo de la corriente verificado cargando y descargando la batería.
+
+### Modo de escucha (Evobike S13-2)
+- [ ] P-070 Escucha de 30 s con la scooter **encendida y quieta** y la app oficial cerrada: ¿llegan notificaciones por sí solas? Pegar el `.txt`.
+- [ ] P-071 Escucha con la **rueda en el aire** y la scooter en distintos estados (acelerador, marcha, freno): ¿cambian los bytes?
+- [ ] P-072 Correlacionar el registro con lo que muestra la pantalla o la app oficial (velocidad, batería, marcha).
+- [ ] P-073 Tras la escucha, la scooter conserva su estado y la app oficial sigue conectando.
 
 ### Integración
 - [ ] P-040 Operación concurrente de UART, BLE y ADC.
