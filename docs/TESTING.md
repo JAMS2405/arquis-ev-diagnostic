@@ -21,7 +21,6 @@ _Esta tabla se actualiza solo con resultados reales._
 | ID | Prueba | Entorno | Resultado | Fecha |
 |---|---|---|---|---|
 | S-001 | Compilación del esqueleto de la Etapa 0 (`pio run`, env `esp32s3_n16r8`) | Contenedor Linux, PlatformIO Core 6.2.0, plataforma espressif32 + framework Arduino | **Pasa**: `[SUCCESS]`, 0 advertencias. RAM 7,0 % (22 808 B), Flash 4,5 % (298 188 B de 6 553 600 B de partición de app). Se generó `firmware.bin`. | 2026-11-18 |
-
 | S-002 | Compilación del firmware de la Etapa 1 (display ILI9341 + informe de sistema), rama `feat/stage-1-display` | Contenedor Linux, PlatformIO Core 6.2.0; Adafruit GFX 1.13.0, Adafruit ILI9341 1.7.0 | **Pasa**: `[SUCCESS]`, 0 advertencias en el código del proyecto. RAM 7,0 % (23 048 B), Flash 4,7 % (311 268 B de 6 553 600 B). **No ejecutado en hardware.** | 2026-11-18 |
 
 > Una compilación exitosa **solo demuestra que el código compila**. No valida arranque, pines, pantalla ni ningún hardware.
