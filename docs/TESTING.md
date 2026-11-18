@@ -12,7 +12,8 @@ Este documento separa estrictamente tres categorías. **No se registra como ejec
 
 | ID | Prueba | Entorno | Resultado | Fecha |
 |---|---|---|---|---|
-| — | Ninguna prueba sobre hardware físico ha sido ejecutada | — | — | — |
+| H-001 | Primer flasheo de la Etapa 1 (commit `28be70d`) y monitor serie en COM5 a 115200 | ESP32-S3 real, conector USB y cableado de la TFT sin confirmar | **Fallo / no concluyente**: sin salida en el monitor tras RESET y la pantalla TFT no encendió. Causa sin determinar. Hipótesis: `Serial` iba solo al USB nativo (`CDC_ON_BOOT=1`) y el conector usado pudo ser el del puente UART; cableado de la TFT a los pines provisionales sin confirmar. | 2026-11-18 |
+| — | Resto de pruebas sobre hardware: ninguna ejecutada | — | — | — |
 
 _Esta tabla se actualiza solo con resultados reales._
 
