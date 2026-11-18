@@ -1,0 +1,6 @@
+{
+  "name": "notify_log",
+  "version": "0.1.0",
+  "description": "Pure C++ formatting and statistics for captured BLE notifications. No Arduino/BLE dependencies, host-testable.",
+  "license": "MIT"
+}
