@@ -31,6 +31,39 @@ void hexOf(const uint8_t* data, size_t len, char* out, size_t out_len) {
     out[pos < out_len ? pos : out_len - 1] = '\0';
 }
 
+// Human-readable labels for well-known UUIDs (informational only).
+struct KnownUuid {
+    const char* uuid;   // lowercase, as printed by NimBLE
+    const char* label;
+};
+const KnownUuid kKnownUuids[] = {
+    {"0x1800", "Generic Access"},
+    {"0x1801", "Generic Attribute"},
+    {"0x180a", "Device Information"},
+    {"0x180f", "Battery Service"},
+    {"0x2a00", "Device Name"},
+    {"0x2a01", "Appearance"},
+    {"0x2a04", "Peripheral Preferred Connection Parameters"},
+    {"0x2a05", "Service Changed"},
+    {"0x2a19", "Battery Level"},
+    {"0x2a24", "Model Number"},
+    {"0x2a25", "Serial Number"},
+    {"0x2a26", "Firmware Revision"},
+    {"0x2a27", "Hardware Revision"},
+    {"0x2a28", "Software Revision"},
+    {"0x2a29", "Manufacturer Name"},
+    {"0x2a50", "PnP ID"},
+    // Well-known Telink BLE OTA service: writing here can brick the module.
+    {"00010203-0405-0607-0809-0a0b0c0d1912", "Telink OTA (firmware update) - NEVER WRITE"},
+};
+
+const char* labelFor(const std::string& uuid) {
+    for (const KnownUuid& k : kKnownUuids) {
+        if (strcasecmp(uuid.c_str(), k.uuid) == 0) return k.label;
+    }
+    return nullptr;
+}
+
 void printHexSpaced(Print& out, const uint8_t* data, size_t len) {
     for (size_t i = 0; i < len; i++) out.printf("%02X ", data[i]);
 }
@@ -177,17 +210,23 @@ bool exploreGatt(int index, Print& out) {
 
     int chars_seen = 0;
     for (NimBLERemoteService* svc : client->getServices(true)) {
-        out.printf("SERVICE %s\n", svc->getUUID().toString().c_str());
+        const std::string svcUuid = svc->getUUID().toString();
+        const char* svcLabel = labelFor(svcUuid);
+        out.printf("SERVICE %s%s%s%s\n", svcUuid.c_str(), svcLabel ? "  [" : "", svcLabel ? svcLabel : "",
+                   svcLabel ? "]" : "");
 
         for (NimBLERemoteCharacteristic* ch : svc->getCharacteristics(true)) {
             if (++chars_seen > kMaxCharsPerDevice) {
                 out.println("  ... characteristic limit reached, stopping");
                 goto done;
             }
-            out.printf("  CHAR %s  props:%s%s%s%s%s\n", ch->getUUID().toString().c_str(),
+            const std::string chUuid = ch->getUUID().toString();
+            const char* chLabel = labelFor(chUuid);
+            out.printf("  CHAR %s  props:%s%s%s%s%s%s%s%s\n", chUuid.c_str(),
                        ch->canRead() ? " READ" : "", ch->canWrite() ? " WRITE" : "",
                        ch->canWriteNoResponse() ? " WRITE_NR" : "",
-                       ch->canNotify() ? " NOTIFY" : "", ch->canIndicate() ? " INDICATE" : "");
+                       ch->canNotify() ? " NOTIFY" : "", ch->canIndicate() ? " INDICATE" : "",
+                       chLabel ? "  [" : "", chLabel ? chLabel : "", chLabel ? "]" : "");
 
             // Only READ-capable characteristics are read. Nothing is ever written.
             if (ch->canRead()) {
