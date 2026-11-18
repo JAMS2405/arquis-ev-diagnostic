@@ -13,6 +13,8 @@ Este documento separa estrictamente tres categorías. **No se registra como ejec
 | ID | Prueba | Entorno | Resultado | Fecha |
 |---|---|---|---|---|
 | H-001 | Primer flasheo de la Etapa 1 (commit `28be70d`) y monitor serie en COM5 a 115200 | ESP32-S3 real, conector USB y cableado de la TFT sin confirmar | **Fallo / no concluyente**: sin salida en el monitor tras RESET y la pantalla TFT no encendió. Causa sin determinar. Hipótesis: `Serial` iba solo al USB nativo (`CDC_ON_BOOT=1`) y el conector usado pudo ser el del puente UART; cableado de la TFT a los pines provisionales sin confirmar. | 2026-11-18 |
+| H-002 | Segundo flasheo de la Etapa 1 (commit `60d2feb`, consola dual) y monitor serie en COM4 a 115200 | ESP32-S3 real, informado por el usuario | **Pasa (arranque y memoria)**. Salida literal: `ARQUIS EV DIAGNOSTIC v0.1.0-stage1`; `Chip: ESP32-S3 rev 0, 2 core(s)`; `Flash: 16777216 bytes` (16 MB); `PSRAM: 8386279 bytes` (≈8 MB); `Heap: 366848 bytes free`. Cierra P-001 y P-002. | 2026-11-18 |
+| H-003 | Pantalla TFT con el firmware de H-002 | ESP32-S3 real, informado por el usuario | **Parcial**: el usuario informa que la pantalla ya muestra imagen. Pendiente de confirmar: texto legible, orientación, colores, contador de uptime y pines realmente cableados (P-004). | 2026-11-18 |
 | — | Resto de pruebas sobre hardware: ninguna ejecutada | — | — | — |
 
 _Esta tabla se actualiza solo con resultados reales._
@@ -29,10 +31,10 @@ _Esta tabla se actualiza solo con resultados reales._
 ## 3. Pruebas pendientes
 
 ### Hardware base
-- [ ] P-001 Arranque de la placa ESP32-S3-N16R8 y banner por serie.
-- [ ] P-002 Verificación de 16 MB de flash y 8 MB de PSRAM reportados por el firmware.
+- [x] P-001 Arranque de la placa ESP32-S3-N16R8 y banner por serie (H-002).
+- [x] P-002 Verificación de 16 MB de flash y 8 MB de PSRAM reportados por el firmware (H-002).
 - [ ] P-003 Identificación del modelo exacto de la placa y verificación del pinout.
-- [ ] P-004 Pantalla ILI9341: inicialización, orientación, colores y resolución 240×320.
+- [ ] P-004 Pantalla ILI9341: inicialización, orientación, colores y resolución 240×320 (parcial en H-003: hay imagen; falta confirmar el resto).
 
 ### UART Analyzer
 - [ ] P-010 Captura de tráfico de una fuente de prueba conocida a 3,3 V.
