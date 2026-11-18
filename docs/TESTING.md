@@ -20,7 +20,7 @@ _Esta tabla se actualiza solo con resultados reales._
 
 | ID | Prueba | Entorno | Resultado | Fecha |
 |---|---|---|---|---|
-| S-001 | Compilación del esqueleto de la Etapa 0 (`pio run`, env `esp32s3_n16r8`) | Contenedor Linux, PlatformIO Core 6.2.0 | Ver nota abajo | 2026-11-18 |
+| S-001 | Compilación del esqueleto de la Etapa 0 (`pio run`, env `esp32s3_n16r8`) | Contenedor Linux, PlatformIO Core 6.2.0, plataforma espressif32 + framework Arduino | **Pasa**: `[SUCCESS]`, 0 advertencias. RAM 7,0 % (22 808 B), Flash 4,5 % (298 188 B de 6 553 600 B de partición de app). Se generó `firmware.bin`. | 2026-11-18 |
 
 > Una compilación exitosa **solo demuestra que el código compila**. No valida arranque, pines, pantalla ni ningún hardware.
 

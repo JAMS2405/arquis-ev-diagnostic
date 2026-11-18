@@ -20,7 +20,7 @@ Reglas transversales:
 - [x] README, HARDWARE, ELECTRICAL_SAFETY, PINOUT, DEVELOPMENT_PLAN y TESTING redactados.
 - [x] Pines centralizados en `src/config/pins_config.h`, marcados como provisionales.
 - [x] `.gitignore` excluye `.pio`, secretos y temporales.
-- [ ] Compilación del esqueleto verificada (ver estado en `TESTING.md`).
+- [x] Compilación del esqueleto verificada en contenedor Linux (S-001 en `TESTING.md`). No valida hardware.
 - [ ] Repositorio publicado en GitHub (pendiente de acceso).
 
 ## Etapa 1 — Base del firmware y pantalla
