@@ -58,7 +58,8 @@ Lo que se lee en las fotos:
 - Pads de depuración rotulados `5V`, `SWD`, `SWC`, `RES`, `GND` (interfaz SWD del MCU de la pantalla). **No se usan en este proyecto**: quedan fuera del alcance (solo observación) y se evita cualquier acceso al firmware del vehículo.
 - Conector rojo de 6 pines con rotulación `ZB, RX, TX, B-, DS, B+`.
 - Otra placa/cara muestra rótulos como `5V`, `4.3V`, `DIO`, `CLK`, `TX`, `RX`, `GND`. La existencia de una línea de 4,3 V rotulada **podría** explicar la medición de ≈4,26 V; es solo una hipótesis.
-- Colores de cada cable del conector: sin identificar.
+- Colores de cable del conector, informados por el usuario en el orden `B+, DS, B-, TX, RX, ZB`: **rojo, blanco, negro, amarillo, verde, azul** (B+ rojo, DS blanco, B- negro, TX amarillo, RX verde, ZB azul). Pendiente de verificar con continuidad.
+- La pantalla encendida (foto del usuario) muestra: `S-drive`, `READY`, 70 %, marcha 3, `00 Km/h`, ODO `00000`, `STATE NORMAL`, un icono de advertencia y el **icono de Bluetooth azul encendido**. Estos textos son los que muestra la pantalla, no se interpretan aquí.
 
 ---
 
