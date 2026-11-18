@@ -30,6 +30,9 @@ _Esta tabla se actualiza solo con resultados reales._
 
 | S-005 | Compilación de `feat/stage-3-ble` con la plataforma fijada `espressif32@7.0.1` (Arduino core 2.0.17), la misma que usa el PC del usuario | Contenedor Linux, PlatformIO Core 6.2.0 | **Pasa**: `[SUCCESS]`, RAM 12,3 % (40 420 B, idéntico al log del usuario), Flash 8,4 % (547 233 B). El usuario compiló la misma rama en su PC con el mismo resultado de memoria (el upload falló por COM4 ocupado, no por el firmware). **No ejecutado en hardware.** | 2026-11-18 |
 
+| S-006 | Compilación con la interfaz web (`feat/web-ui`): AP Wi-Fi + servidor HTTP + escaneo BLE asíncrono | Contenedor Linux, PlatformIO Core 6.2.0, `espressif32@7.0.1` | **Pasa**: `[SUCCESS]`, 0 errores. RAM 19,0 % (62 248 B), Flash 14,8 % (972 049 B). También compila con `secrets.h` presente; `git` lo ignora. **No ejecutado en hardware.** | 2026-11-18 |
+| S-007 | Página web en Chromium headless (Playwright) contra un servidor **simulado** (no el ESP32), viewport 390×800 | Contenedor Linux | **Pasa**: escaneo, lista de 3 dispositivos, botón GATT solo en los conectables, resultado, sin errores JS, sin scroll horizontal. Con nombres/UUID maliciosos (`<img onerror>`, `<script>`) se muestran como texto y no se ejecuta nada. **Valida la lógica de la página, no el firmware ni el Wi-Fi.** | 2026-11-18 |
+
 > Una compilación exitosa **solo demuestra que el código compila**. No valida arranque, pines, pantalla ni ningún hardware.
 
 ## 3. Pruebas pendientes
@@ -56,6 +59,13 @@ _Esta tabla se actualiza solo con resultados reales._
 - [ ] P-030 Calibración del ADC con fuente de referencia y multímetro.
 - [ ] P-031 Validación de la protección de entrada (límites máximos).
 - [ ] P-032 Medición de una señal real de baja tensión del vehículo.
+
+### Interfaz web
+- [ ] P-050 El punto de acceso aparece en el teléfono y acepta la clave mostrada en la TFT.
+- [ ] P-051 La página carga en `http://192.168.4.1` en un teléfono real (Android/iOS).
+- [ ] P-052 Escaneo BLE con Wi-Fi activo: comparar número de dispositivos con y sin cliente conectado.
+- [ ] P-053 `Explorar GATT` desde el teléfono sobre un dispositivo de prueba.
+- [ ] P-054 Estabilidad: 10 minutos con la web abierta sin reinicios ni cuelgues.
 
 ### Integración
 - [ ] P-040 Operación concurrente de UART, BLE y ADC.

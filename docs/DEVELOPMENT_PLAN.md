@@ -61,6 +61,19 @@ Reglas transversales:
 - Lista de dispositivos y detalle de GATT visibles en TFT.
 - Si la Evobike S13-2 expone BLE, se documentan UUID y propiedades observadas. *(hardware)*
 
+## Etapa 3b — Interfaz web para teléfono
+
+**Estado:** versión inicial implementada y compilando en la rama `feat/web-ui` (sobre `feat/stage-3-ble`). Pendiente de validación en hardware; no fusionada a `main`. Detalle en `WEB_UI.md`.
+
+**Alcance:** punto de acceso Wi-Fi propio y página única, solo lectura, para controlar el escaneo BLE y la exploración GATT desde el teléfono. Reutilizará el mismo patrón para mostrar capturas UART (Etapa 2) y mediciones (Etapa 4).
+
+**Criterios de aceptación**
+- [x] Compila (S-006) y la página se comporta correctamente contra un servidor simulado (S-007).
+- [x] Sin endpoints de escritura al vehículo, sin OTA, sin clave fija en el repositorio.
+- [ ] El teléfono se conecta al AP y carga la página. *(hardware, P-050/P-051)*
+- [ ] Escaneo y GATT funcionan desde el teléfono. *(hardware, P-053)*
+- [ ] Efecto del Wi-Fi sobre la fiabilidad del escaneo medido y documentado. *(hardware, P-052)*
+
 ## Etapa 4 — Electrical Monitor
 
 **Alcance:** lectura de señales de baja tensión mediante entradas **protegidas** (ADC1), con calibración y filtrado.
