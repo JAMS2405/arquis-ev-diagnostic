@@ -26,6 +26,8 @@ _Esta tabla se actualiza solo con resultados reales._
 | S-001 | Compilación del esqueleto de la Etapa 0 (`pio run`, env `esp32s3_n16r8`) | Contenedor Linux, PlatformIO Core 6.2.0, plataforma espressif32 + framework Arduino | **Pasa**: `[SUCCESS]`, 0 advertencias. RAM 7,0 % (22 808 B), Flash 4,5 % (298 188 B de 6 553 600 B de partición de app). Se generó `firmware.bin`. | 2026-11-18 |
 | S-002 | Compilación del firmware de la Etapa 1 (display ILI9341 + informe de sistema), rama `feat/stage-1-display` | Contenedor Linux, PlatformIO Core 6.2.0; Adafruit GFX 1.13.0, Adafruit ILI9341 1.7.0 | **Pasa**: `[SUCCESS]`, 0 advertencias en el código del proyecto. RAM 7,0 % (23 048 B), Flash 4,7 % (311 268 B de 6 553 600 B). **No ejecutado en hardware.** | 2026-11-18 |
 
+| S-004 | Compilación de la Etapa 3 inicial (BLE Analyzer + comandos serie), rama `feat/stage-3-ble` | Contenedor Linux, PlatformIO Core 6.2.0; NimBLE-Arduino 2.5.2 | **Pasa**: `[SUCCESS]`. RAM 13,3 % (43 616 B), Flash 8,9 % (581 515 B). 0 advertencias en `src/`; 1 advertencia dentro de la librería NimBLE (`availableForWrite` oculto). Comprobación por `grep` en `src/ble/`: sin `writeValue`, `subscribe`, `pair`, `setSecurity`, ni servidor GATT/advertising. **No ejecutado en hardware.** | 2026-11-18 |
+
 > Una compilación exitosa **solo demuestra que el código compila**. No valida arranque, pines, pantalla ni ningún hardware.
 
 ## 3. Pruebas pendientes
@@ -44,7 +46,7 @@ _Esta tabla se actualiza solo con resultados reales._
 - [ ] P-014 Confirmación de que no existe transmisión hacia el vehículo.
 
 ### BLE Analyzer
-- [ ] P-020 Descubrimiento de un dispositivo BLE de prueba.
+- [ ] P-020 Descubrimiento de un dispositivo BLE de prueba (comando `scan`).
 - [ ] P-021 Lectura de servicios y características GATT.
 - [ ] P-022 Descubrimiento/exploración de BLE en la Evobike S13-2 (solo lectura).
 

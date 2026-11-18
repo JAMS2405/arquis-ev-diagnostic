@@ -51,10 +51,12 @@ Reglas transversales:
 
 ## Etapa 3 — BLE Analyzer
 
+**Estado:** versión inicial implementada y compilando en la rama `feat/stage-3-ble`. Se adelantó a la Etapa 2 por decisión del usuario, porque no requiere conexión eléctrica a la scooter mientras se miden los niveles del UART. Pendiente de validación en hardware; no fusionada a `main`.
+
 **Alcance:** escaneo de dispositivos BLE (nombre, dirección, RSSI, datos de anuncio); conexión opcional y **solo lectura** de servicios/características GATT; sin escrituras, sin suscripciones que alteren el estado del vehículo, sin modificar parámetros.
 
 **Criterios de aceptación**
-- Ninguna escritura GATT en el código (revisión de código).
+- [x] Ninguna escritura GATT en el código (revisión de código y `grep` sin coincidencias de `writeValue`/`subscribe`; ver S-004).
 - Descubre un dispositivo BLE de prueba conocido y lista sus servicios/características. *(hardware)*
 - Lista de dispositivos y detalle de GATT visibles en TFT.
 - Si la Evobike S13-2 expone BLE, se documentan UUID y propiedades observadas. *(hardware)*
