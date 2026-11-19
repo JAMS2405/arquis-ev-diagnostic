@@ -39,10 +39,12 @@ Reglas transversales:
 
 ## Etapa 2 — UART Analyzer (prioridad máxima)
 
+**Estado:** implementada y compilando en la rama `feat/stage-2-uart`. Pendiente de validación en hardware; no fusionada a `main`. Guía en `UART_TAP.md`.
+
 **Alcance:** captura **pasiva** (solo RX) de las líneas TX/RX de la scooter; registro de bytes con marca de tiempo; estimación de velocidad en baudios; visualización hexadecimal/ASCII; detección de tramas por separación temporal; sin transmisión.
 
 **Criterios de aceptación**
-- Ninguna ruta de código transmite por los puertos del analizador (revisión de código + ausencia de pin TX asignado).
+- [x] Ninguna ruta de código transmite por los puertos del analizador: sin pin TX asignado, `txPin = -1` y vigilante estático probado con violaciones deliberadas (S-013).
 - Se captura tráfico generado por una fuente conocida de prueba (p. ej. otro microcontrolador a 3,3 V) sin pérdida de bytes a las velocidades objetivo. *(hardware)*
 - Estimación de baudios correcta frente a la fuente de prueba. *(hardware)*
 - Los niveles lógicos de la Evobike S13-2 se miden con multímetro y se documentan **antes** de conectar. *(hardware)*

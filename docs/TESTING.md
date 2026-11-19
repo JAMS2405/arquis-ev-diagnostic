@@ -43,6 +43,10 @@ _Esta tabla se actualiza solo con resultados reales._
 | S-011 | Compilación del modo de escucha (`feat/ble-listen`), pruebas del PC y vigilante de escrituras | Contenedor Linux, `espressif32@7.0.1` | **Pasa**: `[SUCCESS]`, RAM 29,4 % (96 440 B, incluye el registro de 32 KB), Flash 15,2 % (998 997 B). `pio test -e native` (ahora con `-std=gnu++11`, el estándar del firmware): **19/19** (12 JBD + 7 `notify_log`). `check_ble_write_policy.py` OK y probado con dos violaciones deliberadas (detectadas, exit 1). La primera compilación del firmware **falló** por una lambda de C++14; se corrigió y se alineó el estándar de las pruebas. **No ejecutado en hardware.** | 2026-11-18 |
 | S-012 | Interfaz de escucha en Chromium headless contra un servidor **simulado** | Contenedor Linux | **Pasa**: aviso de confirmación, registro en vivo ensamblado por fragmentos idéntico al del servidor, estado, descarga `.txt` idéntica, caso de error, texto HTML hostil mostrado como texto, sin errores JS. **No valida el ESP32.** | 2026-11-18 |
 
+| S-013 | Compilación del UART Analyzer (`feat/stage-2-uart`) y vigilante de pasividad | Contenedor Linux, `espressif32@7.0.1` | **Pasa**: `[SUCCESS]`, RAM 34,6 % (113 504 B; incluye buffers estáticos), Flash 15,5 % (1 016 701 B). `check_ble_write_policy.py` OK, ampliado con reglas UART; probado con **5 violaciones deliberadas** (escritura en puerto, `pinMode OUTPUT`, `INPUT_PULLUP`, `begin()` con TX, `uart_set_pin`): las detectó todas. El primer intento dio un falso positivo (`flush` de mi recolector de tramas); se renombró el método en vez de debilitar la regla. Verificado en el código fuente del core 2.0.17 que con `txPin = -1` el pad TX no se conecta. **No ejecutado en hardware.** | 2026-11-19 |
+| S-014 | Pruebas unitarias en el PC de `uart_sniff` con **trazas UART sintéticas** (`pio test -e native`, `-std=gnu++11`) | Contenedor Linux | **Pasa 36/36** (12 JBD + 7 `notify_log` + 17 `uart_sniff`). Cubren: velocidad detectada para 1200–115200 baud con ruido de temporización y glitches, tramas con 40 repeticiones, ruido aleatorio no confiable, separación de tramas por pausa, capacidad y truncado, desbordamiento del temporizador, bytes variables y plantilla, checksum (suma invertida de 16 bits LE, xor8) y rechazo de falsos positivos. En el primer intento fallaron 3: 2 errores de mi prueba y **1 defecto real** (un byte final constante se aceptaba como checksum); se corrigió el código y se añadió una prueba de regresión. **Las trazas son simuladas: no validan la línea real de la Evobike.** | 2026-11-19 |
+| S-015 | Interfaz del UART en Chromium headless contra un servidor **simulado** | Contenedor Linux | **Pasa**: aviso de confirmación (menciona divisor y «solo recibe»), parámetros de detección y captura correctos, velocidad detectada pasada al campo de baudios, registro idéntico al del servidor, descarga, caso de error, texto hostil inerte, sin errores JS. **No valida el ESP32.** | 2026-11-19 |
+
 > Una compilación exitosa **solo demuestra que el código compila**. No valida arranque, pines, pantalla ni ningún hardware.
 
 ## 3. Pruebas pendientes
@@ -54,9 +58,10 @@ _Esta tabla se actualiza solo con resultados reales._
 - [ ] P-004 Pantalla ILI9341: inicialización, orientación, colores y resolución 240×320 (parcial en H-003: hay imagen; falta confirmar el resto).
 
 ### UART Analyzer
-- [ ] P-010 Captura de tráfico de una fuente de prueba conocida a 3,3 V.
-- [ ] P-011 Estimación de velocidad en baudios.
-- [ ] P-012 Medición con multímetro de los niveles lógicos de TX/RX de la Evobike S13-2.
+- [ ] P-010 Autoprueba sin scooter (`UART_TAP.md`, paso 0): TX de la consola unido a GPIO15; la captura a 115200 muestra el texto de `info`.
+- [ ] P-011 Estimación de velocidad: la detección da 115200 en esa autoprueba.
+- [x] P-012 Niveles medidos con multímetro en TX/RX de la Evobike (informado por el usuario): ≈ 4,26 V y ≈ 2,27 V de promedio, sin cambios salvo ≈ 0,01 V. No concluyente por sí solo; ver `CASE_EVOBIKE_S13-2.md`.
+- [ ] P-015 Divisor validado con 5 V del ESP32: ≈ 3,3 V en el nodo.
 - [ ] P-013 Captura pasiva real en la Evobike S13-2.
 - [ ] P-014 Confirmación de que no existe transmisión hacia el vehículo.
 

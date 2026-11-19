@@ -27,9 +27,33 @@ Se comprueban **con el multímetro**, sin la herramienta:
 4. **Controlador** averiado.
 5. **Protección del BMS** (por tensión, temperatura o corriente).
 
+## Actualización 2026-11-19: mediciones del usuario
+
+Todo «informado» por el usuario, no verificado por la herramienta.
+
+| Elemento | Resultado | Lectura |
+|---|---|---|
+| Acelerador | 5 V de alimentación, GND, señal ≈ 0,8 V en reposo que sube a ≈ 4 V; además cambió el sensor Hall del acelerador | En su conector la señal es correcta |
+| Hall del motor | Todos conmutan al girar la rueda a mano | Correctos |
+| Frenos | Ambos bien; ninguno activo; la luz de freno se enciende al accionarlos | Correctos |
+| Batería (B+ contra B−) | Tensión normal | Sin indicio de falla de batería |
+| Botón de marcha | Cambia 1, 2, 3 con cada pulsación | Funciona |
+| **Botón de marcha mantenido** | **El motor anda; con una persona encima empuja a ≈ 5 km/h** | Ver hipótesis |
+| Icono de error | Parpadea ≈ 1 vez por segundo; sin código, sin pitidos | — |
+| Antecedentes | Falló sin causa conocida | — |
+| TX / RX | Sin cambios al acelerar, frenar o cambiar luces (salvo ≈ 0,01 V) | Sin concluir |
+
+### Hipótesis (sin verificar)
+- Que el motor se mueva con el botón mantenido sugiere que el **motor, sus Hall y la etapa de potencia del controlador funcionan**, y que el controlador **sí recibe órdenes** de la pantalla. Es una interpretación mía: «modo de empuje» es un nombre habitual de esa función, no confirmado en esta scooter.
+- Entonces el controlador **no acepta la orden del acelerador** y la pantalla muestra un error. Qué falla exactamente no se sabe.
+- Con las medidas del usuario quedan **descartadas** (salvo error de medición): sensor del acelerador, Hall del motor, frenos y batería.
+- Posibles causas que **no** se han comprobado: el acelerador en el **lado del controlador** (cable o conector entre el acelerador y el controlador), un estado de protección del controlador (p. ej. limitación de velocidad por una falla), configuración del controlador, o el controlador mismo.
+- El **código de falla** probablemente viaja por la línea UART controlador→pantalla. Es el siguiente paso: `UART_TAP.md`.
+
 ## Pendiente
-- [ ] Aclarar qué hace exactamente la palanca de cambios y qué hace el motor.
-- [ ] ¿La pantalla muestra algún patrón (parpadeo, cuántas veces)? ¿El controlador tiene LED o pitidos?
-- [ ] Medir B+ contra B-.
-- [ ] Medir señal del acelerador, del freno y los Hall del motor (rueda en el aire).
-- [ ] Etapa 2: captura pasiva de la línea UART con entrada protegida (`ELECTRICAL_SAFETY.md`).
+- [x] Qué hace la palanca/botón de marcha y el motor (ver tabla).
+- [x] Patrón del icono: ≈ 1 parpadeo por segundo, sin pitidos.
+- [x] B+ contra B−: normal.
+- [x] Acelerador, frenos y Hall del motor: correctos.
+- [ ] ¿El controlador tiene LED de estado? ¿Se puede medir la señal del acelerador **en el conector del controlador**?
+- [ ] Etapa 2: captura pasiva de la línea UART con entrada protegida (`UART_TAP.md`): autoprueba sin scooter, luego estado de error, acelerador, modo de empuje y freno.
