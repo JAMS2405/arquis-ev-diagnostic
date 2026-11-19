@@ -14,6 +14,9 @@
  *   listen <index> [secs]  LISTEN-ONLY: subscribe to the device's notifications and log
  *                  what it sends. Sends NO data to the device. Own devices only.
  *   stoplisten     end a listen session
+ *   uartdetect [A|B] [ms]            estimate the baud of a UART line (RECEIVE-ONLY)
+ *   uartcap <A|B> <baud> [secs] [8N1|8E1|8O1] [gap_ms]   capture + analyze frames (RECEIVE-ONLY)
+ *   uartstop       end a UART detection/capture
  *   jbd <index>    JBD BMS report. Sends 3 fixed standard READ requests (opt-in,
  *                  src/bms). Only for batteries you own.
  *
@@ -26,6 +29,7 @@
 
 #include "ble/ble_analyzer.h"
 #include "ble/ble_listen.h"
+#include "uart/uart_analyzer.h"
 #include "bms/jbd_bms.h"
 #include "config/console.h"
 #include "config/project_config.h"
@@ -46,6 +50,8 @@ constexpr uint32_t kMaxScanSecs          = 30;
 
 bool g_webOk                  = false;
 bool g_listenStream           = false;
+bool g_uartStream             = false;
+size_t g_uartOffset           = 0;
 size_t g_listenOffset         = 0;
 unsigned long g_lastRefresh   = 0;
 unsigned long g_lastHeartbeat = 0;
@@ -88,6 +94,9 @@ void printHelp() {
     out.println("  gatt <index>  read-only GATT exploration of a scanned device");
     out.println("  listen <i> [s] listen-only: log what the device sends (no data is sent to it)");
     out.println("  stoplisten    end the listen session");
+    out.println("  uartdetect [A|B] [ms]  estimate baud on a UART line (receive-only)");
+    out.println("  uartcap <A|B> <baud> [secs] [8N1|8E1|8O1] [gap_ms]  capture + analyze (receive-only)");
+    out.println("  uartstop      end a UART detection/capture");
     out.println("  jbd <index>   JBD BMS report (sends 3 standard READ requests; own batteries only)");
     out.println("  wifi          show the web UI access (SSID, password, URL)");
 }
@@ -151,6 +160,46 @@ void handleCommand(const String& line) {
             if (v > 0) secs = (v > (long)kMaxScanSecs) ? kMaxScanSecs : (uint32_t)v;
         }
         cmdScan(secs);
+    } else if (cmd == "uartstop") {
+        uart_analyzer::stop();
+    } else if (cmd.startsWith("uartdetect") || cmd.startsWith("uartcap")) {
+        const bool isCap = cmd.startsWith("uartcap");
+        String rest = cmd.substring(isCap ? 7 : 10);
+        rest.trim();
+        // tokenise by spaces
+        String tok[6];
+        int nt = 0;
+        while (rest.length() > 0 && nt < 6) {
+            const int sp = rest.indexOf(' ');
+            tok[nt++] = sp < 0 ? rest : rest.substring(0, sp);
+            rest = sp < 0 ? String("") : rest.substring(sp + 1);
+            rest.trim();
+        }
+        const int ch = (nt > 0 && (tok[0] == "B" || tok[0] == "b")) ? 1 : 0;
+        char err[64] = "";
+        bool ok = false;
+        if (!isCap) {
+            const long ms = nt > 1 ? tok[1].toInt() : 2000;
+            ok = uart_analyzer::startDetect(ch, ms > 0 ? (uint32_t)ms : 2000, err, sizeof(err));
+        } else if (nt < 2) {
+            out.println("usage: uartcap <A|B> <baud> [secs] [8N1|8E1|8O1] [gap_ms]");
+        } else {
+            const long baud = tok[1].toInt();
+            const long secs = nt > 2 ? tok[2].toInt() : 30;
+            int fmt = 0;
+            if (nt > 3 && (tok[3] == "8E1" || tok[3] == "8e1")) fmt = 1;
+            if (nt > 3 && (tok[3] == "8O1" || tok[3] == "8o1")) fmt = 2;
+            const long gap = nt > 4 ? tok[4].toInt() : 5;
+            ok = uart_analyzer::startCapture(ch, baud > 0 ? (uint32_t)baud : 0, fmt,
+                                             secs > 0 ? (uint32_t)secs : 30, gap > 0 ? (uint32_t)gap : 5,
+                                             err, sizeof(err));
+        }
+        if (ok) {
+            g_uartStream = true;
+            g_uartOffset = 0;
+            return;  // loop streams the log and prints '> ready' at the end
+        }
+        if (err[0]) out.printf("uart failed: %s\n", err);
     } else if (cmd == "stoplisten") {
         ble_listen::stop();
     } else if (cmd.startsWith("listen")) {
@@ -228,6 +277,19 @@ void streamListen() {
     }
 }
 
+// Streams the UART analyzer log to the console while it runs.
+void streamUart() {
+    if (!g_uartStream) return;
+    const String t = uart_analyzer::textFrom(g_uartOffset, 400);
+    if (t.length() > 0) {
+        console::out().print(t);
+        g_uartOffset += t.length();
+    } else if (!uart_analyzer::isActive()) {
+        g_uartStream = false;
+        console::out().println("> ready");
+    }
+}
+
 void pollSerialCommands() {
     auto& con = console::out();
     while (con.available() > 0) {
@@ -260,6 +322,7 @@ void setup() {
         console::out().println("Display: init FAILED");
     }
 
+    console::out().println(uart_analyzer::begin() ? "UART analyzer: ready (receive-only)" : "UART analyzer: init FAILED");
     g_bleOk = ble_analyzer::begin();
     console::out().println(g_bleOk ? "BLE: ready (read-only analyzer)" : "BLE: init FAILED");
 
@@ -284,7 +347,9 @@ void loop() {
     pollSerialCommands();
     web::loop();
     ble_listen::poll();
+    uart_analyzer::poll();
     streamListen();
+    streamUart();
 
     if (g_displayOk && millis() - g_lastRefresh >= kStatusRefreshMs) {
         g_lastRefresh = millis();

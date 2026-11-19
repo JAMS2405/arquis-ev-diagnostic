@@ -7,6 +7,7 @@
 #include "ble/ble_analyzer.h"
 #include "ble/ble_listen.h"
 #include "bms/jbd_bms.h"
+#include "uart/uart_analyzer.h"
 #include "config/project_config.h"
 #include "web/web_page.h"
 
@@ -272,6 +273,81 @@ void handleListenStop() {
     sendJson(200, "{\"stopped\":true}");
 }
 
+// ---- UART analyzer (passive, receive-only; see uart/uart_analyzer.h) --------
+long argLong(const char* name, long def) {
+    return g_server.hasArg(name) ? g_server.arg(name).toInt() : def;
+}
+
+void sendUartError(const char* err) {
+    String j = "{\"error\":";
+    appendJsonString(j, err);
+    j += "}";
+    sendJson(409, j);
+}
+
+void handleUartDetect() {
+    if (g_server.method() != HTTP_POST) {
+        sendJson(405, "{\"error\":\"POST required\"}");
+        return;
+    }
+    char err[64] = "";
+    if (!uart_analyzer::startDetect((int)argLong("ch", 0), (uint32_t)argLong("ms", 2000), err, sizeof(err))) {
+        sendUartError(err);
+        return;
+    }
+    sendJson(202, "{\"started\":true}");
+}
+
+void handleUartCapture() {
+    if (g_server.method() != HTTP_POST) {
+        sendJson(405, "{\"error\":\"POST required\"}");
+        return;
+    }
+    char err[64] = "";
+    if (!uart_analyzer::startCapture((int)argLong("ch", 0), (uint32_t)argLong("baud", 0),
+                                     (int)argLong("fmt", 0), (uint32_t)argLong("secs", 30),
+                                     (uint32_t)argLong("gap", 5), err, sizeof(err))) {
+        sendUartError(err);
+        return;
+    }
+    sendJson(202, "{\"started\":true}");
+}
+
+void handleUartStop() {
+    if (g_server.method() != HTTP_POST) {
+        sendJson(405, "{\"error\":\"POST required\"}");
+        return;
+    }
+    uart_analyzer::stop();
+    sendJson(200, "{\"stopped\":true}");
+}
+
+void handleUartStatus() {
+    if (g_server.method() != HTTP_GET) {
+        sendJson(405, "{\"error\":\"GET required\"}");
+        return;
+    }
+    const long off = argLong("offset", 0);
+    const uart_analyzer::Status st = uart_analyzer::status();
+    const String chunk = uart_analyzer::textFrom(off > 0 ? (size_t)off : 0, 3000);
+    const char* mode = st.mode == uart_analyzer::Mode::Idle
+                           ? "idle"
+                           : (st.mode == uart_analyzer::Mode::Detecting ? "detect" : "capture");
+    String j;
+    j.reserve(chunk.length() + 160);
+    j += "{\"mode\":\"";
+    j += mode;
+    j += "\",\"secs_left\":" + String(st.secs_left);
+    j += ",\"bytes\":" + String(st.bytes);
+    j += ",\"frames\":" + String(st.frames);
+    j += ",\"trunc\":";
+    j += st.truncated ? "true" : "false";
+    j += ",\"chunk\":";
+    appendJsonString(j, chunk.c_str());
+    j += "}";
+    sendJson(200, j);
+}
+
 void handleNotFound() { sendJson(404, "{\"error\":\"not found\"}"); }
 
 }  // namespace
@@ -292,6 +368,10 @@ bool begin() {
     g_server.on("/api/bms", HTTP_ANY, handleBms);
     g_server.on("/api/listen", HTTP_ANY, handleListen);
     g_server.on("/api/listen/stop", HTTP_ANY, handleListenStop);
+    g_server.on("/api/uart", HTTP_ANY, handleUartStatus);
+    g_server.on("/api/uart/detect", HTTP_ANY, handleUartDetect);
+    g_server.on("/api/uart/capture", HTTP_ANY, handleUartCapture);
+    g_server.on("/api/uart/stop", HTTP_ANY, handleUartStop);
     g_server.onNotFound(handleNotFound);
     g_server.begin();
 

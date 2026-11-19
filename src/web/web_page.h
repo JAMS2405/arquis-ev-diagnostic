@@ -34,6 +34,7 @@ button.ghost{background:var(--card);color:var(--fg);border-color:var(--line);fon
 .meta{font-size:13px;color:var(--mut);word-break:break-all;margin-top:2px}
 .card button{margin-top:10px}
 pre{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;overflow:auto;font-size:12px;white-space:pre-wrap;word-break:break-all;min-height:80px}
+input{font:inherit;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);width:110px}
 table{width:100%;border-collapse:collapse;font-size:14px}
 td,th{padding:5px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
 th{color:var(--mut);font-weight:500;width:46%}
@@ -70,6 +71,26 @@ th{color:var(--mut);font-weight:500;width:46%}
 </div>
 <div id="lstat" class="note">Sin sesión. Pulsa «Escuchar» en un dispositivo propio. No se le envía ningún dato.</div>
 <pre id="listen">—</pre>
+
+<h2>UART (solo recibe)</h2>
+<p class="note">Antes de conectar: divisor 10 kΩ/20 kΩ + 1 kΩ, GND común (B−) y una línea a la vez. Ver <code>docs/UART_TAP.md</code>. El ESP32 no transmite por esta vía.</p>
+<div class="row">
+  <select id="uch"><option value="0">Canal A</option><option value="1">Canal B</option></select>
+  <button id="udet">Detectar velocidad</button>
+</div>
+<div class="row" style="margin-top:8px">
+  <input id="ubaud" type="number" value="9600" min="300" max="230400" aria-label="baudios">
+  <select id="ufmt"><option value="0">8N1</option><option value="1">8E1</option><option value="2">8O1</option></select>
+  <select id="usecs"><option value="10">10 s</option><option value="30" selected>30 s</option><option value="60">60 s</option><option value="120">120 s</option></select>
+  <input id="ugap" type="number" value="5" min="2" max="1000" style="width:80px" aria-label="separación de tramas en ms"> ms
+</div>
+<div class="row" style="margin-top:8px">
+  <button id="ucap">Capturar</button>
+  <button class="ghost" id="ustop" disabled>Detener</button>
+  <button class="ghost" id="udl" disabled>Descargar .txt</button>
+</div>
+<div id="ustat" class="note">Sin sesión.</div>
+<pre id="ulog">—</pre>
 
 <h2>Resultado GATT</h2>
 <pre id="out">Pulsa «Explorar GATT» en un dispositivo conectable.</pre>
@@ -249,6 +270,37 @@ async function pollListen(btn){
 }
 $('lstop').onclick=async()=>{try{await j('/api/listen/stop',{method:'POST'});}catch(e){}};
 $('ldl').onclick=()=>lText&&download('arquis-escucha-'+Date.now()+'.txt',lText,'text/plain');
+let uOff=0,uText='',uBusy=false;
+const U_CONFIRM='¿Montaste el divisor (10 kΩ/20 kΩ + 1 kΩ), lo verificaste con 5 V, y conectaste GND a B− y UNA sola línea? Una conexión directa sin divisor puede dañar el ESP32. El ESP32 solo recibe.';
+async function uartStart(url,what){
+  if(uBusy)return;
+  if(!confirm(U_CONFIRM))return;
+  uBusy=true;uOff=0;uText='';$('ulog').textContent='Iniciando '+what+'…';$('udl').disabled=true;
+  try{
+    const r=await fetch(url,{method:'POST'});const o=await r.json();
+    if(!r.ok){$('ulog').textContent='No se pudo iniciar: '+(o.error||r.status);uBusy=false;return;}
+  }catch(e){$('ulog').textContent='Error: '+e.message;uBusy=false;return;}
+  $('ustop').disabled=false;
+  uartPoll();
+}
+async function uartPoll(){
+  try{
+    const o=await (await j('/api/uart?offset='+uOff)).json();
+    if(o.chunk){uText+=o.chunk;uOff+=o.chunk.length;$('ulog').textContent=uText;}
+    const label=o.mode==='detect'?'Detectando':o.mode==='capture'?'Capturando':'Terminado';
+    $('ustat').textContent=label+(o.mode!=='idle'?' · quedan '+o.secs_left+' s':'')+' · '+o.frames+' tramas · '+o.bytes+' bytes'+(o.trunc?' · registro lleno (truncado)':'');
+    if(o.mode!=='idle'||o.chunk){setTimeout(uartPoll,1000);}
+    else{
+      uBusy=false;$('ustop').disabled=true;$('udl').disabled=!uText;
+      const m=uText.match(/>> baud (\d+)/);
+      if(m)$('ubaud').value=m[1];
+    }
+  }catch(e){$('ustat').textContent='Sin conexión con el ESP32, reintentando…';setTimeout(uartPoll,2000);}
+}
+$('udet').onclick=()=>uartStart('/api/uart/detect?ch='+$('uch').value+'&ms=2000','detección');
+$('ucap').onclick=()=>uartStart('/api/uart/capture?ch='+$('uch').value+'&baud='+$('ubaud').value+'&fmt='+$('ufmt').value+'&secs='+$('usecs').value+'&gap='+$('ugap').value,'captura');
+$('ustop').onclick=async()=>{try{await j('/api/uart/stop',{method:'POST'});}catch(e){}};
+$('udl').onclick=()=>uText&&download('arquis-uart-'+Date.now()+'.txt',uText,'text/plain');
 $('scan').onclick=startScan;
 $('copy').onclick=()=>{
   const r=document.createRange();r.selectNodeContents($('out'));
