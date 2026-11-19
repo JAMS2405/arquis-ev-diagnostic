@@ -1,0 +1,6 @@
+{
+  "name": "panel_text",
+  "version": "0.1.0",
+  "description": "Pure C++ text builders for the TFT dashboard. Guarantees every line fits the 240 px screen. No Arduino dependencies, host-testable.",
+  "license": "MIT"
+}
