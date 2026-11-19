@@ -34,6 +34,7 @@
 #include "config/console.h"
 #include "config/project_config.h"
 #include "display/display.h"
+#include "panel_text.h"
 #include "web/web_server.h"
 
 #if defined(SET_LOOP_TASK_STACK_SIZE)
@@ -45,6 +46,7 @@ namespace {
 constexpr unsigned long kBootScreenMs    = 1500;
 constexpr unsigned long kStatusRefreshMs = 1000;
 constexpr unsigned long kHeartbeatMs     = 30000;
+constexpr unsigned long kScanListMs     = 15000;
 constexpr uint32_t kDefaultScanSecs      = 8;
 constexpr uint32_t kMaxScanSecs          = 30;
 
@@ -53,6 +55,7 @@ bool g_listenStream           = false;
 bool g_uartStream             = false;
 size_t g_uartOffset           = 0;
 size_t g_listenOffset         = 0;
+unsigned long g_scanListUntil = 0;  // while > 0 a serial-triggered scan list is on screen
 unsigned long g_lastRefresh   = 0;
 unsigned long g_lastHeartbeat = 0;
 bool g_displayOk              = false;
@@ -117,10 +120,97 @@ void showScanOnDisplay() {
     char title[24];
     snprintf(title, sizeof(title), "BLE: %d dev", total);
     display::showTextList(title, lines, n);
+    g_scanListUntil = millis() + kScanListMs;  // then the dashboard comes back by itself
+}
+
+// Builds the dashboard from the live state of every module and repaints what changed.
+void refreshDashboard() {
+    if (!g_displayOk) return;
+    const display::StatusData sys = collectStatus();
+
+    panel_text::BleState ble{};
+    const ble_listen::Status ls = ble_listen::status();
+    ble.listening        = ls.active;
+    ble.listen_secs_left = ls.secs_left;
+    ble.notifications    = ls.notifications;
+    ble.bytes            = ls.bytes;
+    ble.scanning         = ble_analyzer::isScanning();
+    ble.devices          = ble_analyzer::deviceCount();
+
+    const uart_analyzer::Status us = uart_analyzer::status();
+    panel_text::UartState uart{};
+    uart.mode = us.mode == uart_analyzer::Mode::Detecting ? 1
+                : (us.mode == uart_analyzer::Mode::Capturing ? 2 : 0);
+    uart.channel          = us.channel;
+    uart.baud             = us.baud;
+    uart.secs_left        = us.secs_left;
+    uart.frames           = us.frames;
+    uart.bytes            = us.bytes;
+    uart.last_detect_baud = us.last_detect_baud;
+
+    panel_text::BmsState bms{};
+    const jbd_bms::Report* r = jbd_bms::last();
+    if (r && r->have_basic) {
+        bms.have             = true;
+        bms.voltage_cv       = r->basic.total_voltage_cv;
+        bms.cycles           = r->basic.cycles;
+        bms.rsoc             = r->basic.rsoc_percent;
+        bms.protection_flags = r->basic.protection_flags;
+        if (r->have_cells && r->cells.count > 0) bms.delta_mv = jbd::computeCellStats(r->cells).delta_mv;
+    }
+
+    const int clients = g_webOk ? web::clients() : 0;
+    panel_text::HintState hint{};
+    hint.clients   = clients;
+    hint.ble_busy  = ble.scanning || ble.listening;
+    hint.uart_busy = uart.mode != 0;
+
+    static char bleT[32], bleD[64], uartT[32], uartD[64], bmsT[32], bmsD[64], hintS[64];
+    static char sys1[64], sys2[64], url[40];
+    char up[16], heap[16], psram[16], flash[16];
+    panel_text::bleTitle(bleT, sizeof(bleT), ble);
+    panel_text::bleDetail(bleD, sizeof(bleD), ble);
+    panel_text::uartTitle(uartT, sizeof(uartT), uart);
+    panel_text::uartDetail(uartD, sizeof(uartD), uart);
+    panel_text::bmsTitle(bmsT, sizeof(bmsT), bms);
+    panel_text::bmsDetail(bmsD, sizeof(bmsD), bms);
+    panel_text::hint(hintS, sizeof(hintS), hint);
+
+    panel_text::uptime(up, sizeof(up), sys.uptime_s);
+    panel_text::bytesText(heap, sizeof(heap), sys.heap_free_bytes);
+    panel_text::bytesText(psram, sizeof(psram), sys.psram_total_bytes);
+    panel_text::bytesText(flash, sizeof(flash), sys.flash_size_bytes);
+    snprintf(sys1, sizeof(sys1), "Activo %s  Heap %s", up, heap);
+    snprintf(sys2, sizeof(sys2), "PSRAM %s  Flash %s", psram, flash);
+    if (g_webOk) snprintf(url, sizeof(url), "%s", web::url().c_str());
+    else snprintf(url, sizeof(url), "Wi-Fi apagado");
+
+    display::Dashboard d{};
+    d.ssid        = g_webOk ? web::ssid() : "(sin Wi-Fi)";
+    d.password    = g_webOk ? web::password() : "";
+    d.url         = url;
+    d.clients     = clients;
+    d.ble_title   = bleT;
+    d.ble_detail  = bleD;
+    d.ble_active  = ble.scanning || ble.listening;
+    d.uart_title  = uartT;
+    d.uart_detail = uartD;
+    d.uart_active = uart.mode != 0;
+    d.bms_title   = bmsT;
+    d.bms_detail  = bmsD;
+    d.bms_alert   = bms.have && bms.protection_flags != 0;
+    d.hint        = hintS;
+    d.sys1        = sys1;
+    d.sys2        = sys2;
+    d.fw_version  = ARQUIS_FW_VERSION;
+    display::updateDashboard(d);
 }
 
 void restoreStatusScreen() {
-    if (g_displayOk) display::showStatusLayout(collectStatus());
+    if (!g_displayOk) return;
+    g_scanListUntil = 0;
+    display::showDashboardLayout(ARQUIS_FW_VERSION);
+    refreshDashboard();
 }
 
 void cmdScan(uint32_t secs) {
@@ -328,16 +418,17 @@ void setup() {
 
     g_webOk = g_bleOk && web::begin();
     if (g_webOk) {
-        console::out().printf("Web UI: SSID=%s  password=%s  url=%s\n", web::ssid(), web::password(),
+        console::out().printf("Web UI: SSID=%s  password=%s (%s)  url=%s\n", web::ssid(), web::password(),
+                              web::passwordIsFixed() ? "fixed" : "random, changes every boot",
                               web::url().c_str());
-        display::setNetworkInfo(web::ssid(), web::password(), web::url().c_str());
     } else {
         console::out().println("Web UI: NOT started");
     }
 
     if (g_displayOk) {
         delay(kBootScreenMs);
-        display::showStatusLayout(status);
+        display::showDashboardLayout(ARQUIS_FW_VERSION);
+        refreshDashboard();
     }
     printHelp();
     console::out().println("> ready");
@@ -353,8 +444,12 @@ void loop() {
 
     if (g_displayOk && millis() - g_lastRefresh >= kStatusRefreshMs) {
         g_lastRefresh = millis();
-        // Do not overwrite the scan list while it is on screen.
-        if (ble_analyzer::deviceCount() == 0) display::updateStatus(collectStatus());
+        if (g_scanListUntil != 0) {
+            // A serial-triggered scan list is showing: bring the dashboard back after a while.
+            if ((int32_t)(millis() - g_scanListUntil) >= 0) restoreStatusScreen();
+        } else {
+            refreshDashboard();
+        }
     }
     if (millis() - g_lastHeartbeat >= kHeartbeatMs) {
         g_lastHeartbeat = millis();

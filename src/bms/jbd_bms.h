@@ -43,6 +43,9 @@ struct Report {
 /// was obtained.
 bool readReport(int index, Report& out);
 
+/// Last report obtained (successful or not), or nullptr if none yet.
+const Report* last();
+
 /// Human-readable report (serial console).
 void printText(const Report& r, Print& out);
 

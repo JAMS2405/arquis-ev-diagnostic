@@ -30,6 +30,9 @@ struct Status {
     uint32_t bytes;
     uint32_t frames;
     bool truncated;
+    int channel;                // 0 = A, 1 = B (last used)
+    uint32_t baud;              // baud of the last/current capture
+    uint32_t last_detect_baud;  // best candidate of the last detection (0 if none)
 };
 
 /// Allocates buffers (PSRAM when available) and starts the capture task. Call once.

@@ -5,62 +5,72 @@
 #include <Arduino.h>
 #include <SPI.h>
 
+#include <string.h>
+
 #include "config/pins_config.h"
 
 namespace display {
 
 namespace {
 
-constexpr int16_t kWidth  = 240;
-constexpr int16_t kHeight = 320;
+constexpr int16_t kWidth = 240;
 
 // Colors (RGB565)
 constexpr uint16_t kBg     = ILI9341_BLACK;
 constexpr uint16_t kFg     = ILI9341_WHITE;
 constexpr uint16_t kAccent = ILI9341_CYAN;
 constexpr uint16_t kWarn   = ILI9341_YELLOW;
-
-// Layout of the status screen
-constexpr int16_t kValueX    = 88;  // fits 12 chars at size 2 (e.g. "0.1.0-stage1")
-constexpr int16_t kRowHeight = 24;
-constexpr int16_t kRowsTop   = 60;
-
-char g_netSsid[24] = "";
-char g_netPass[24] = "";
-char g_netUrl[32]  = "";
+constexpr uint16_t kGood   = ILI9341_GREEN;
+constexpr uint16_t kBad    = ILI9341_RED;
+constexpr uint16_t kDim    = ILI9341_DARKGREY;
 
 SPIClass g_spi(FSPI);
 Adafruit_ILI9341 g_tft(&g_spi, pins::TFT_DC, pins::TFT_CS, pins::TFT_RST);
 
-void formatBytes(char* out, size_t out_len, uint32_t bytes) {
-    if (bytes >= 1024UL * 1024UL) {
-        snprintf(out, out_len, "%lu.%02lu MB", (unsigned long)(bytes / (1024UL * 1024UL)),
-                 (unsigned long)((bytes % (1024UL * 1024UL)) * 100UL / (1024UL * 1024UL)));
-    } else {
-        snprintf(out, out_len, "%lu KB", (unsigned long)(bytes / 1024UL));
-    }
-}
+// ---- dashboard fields: repaint only on change ------------------------------
 
-void formatUptime(char* out, size_t out_len, uint32_t s) {
-    snprintf(out, out_len, "%02lu:%02lu:%02lu", (unsigned long)(s / 3600UL),
-             (unsigned long)((s / 60UL) % 60UL), (unsigned long)(s % 60UL));
-}
+enum Field {
+    F_CLIENTS,
+    F_SSID,
+    F_PASS,
+    F_URL,
+    F_BLE_T,
+    F_BLE_D,
+    F_UART_T,
+    F_UART_D,
+    F_BMS_T,
+    F_BMS_D,
+    F_HINT,
+    F_SYS1,
+    F_SYS2,
+    F_COUNT
+};
 
-// Draws a value on a status row, overwriting the previous one (bg color set).
-void drawValue(int row, const char* text, uint16_t color) {
-    const int16_t y = kRowsTop + row * kRowHeight;
-    g_tft.fillRect(kValueX, y, kWidth - kValueX, 16, kBg);
+char g_text[F_COUNT][48];
+uint16_t g_color[F_COUNT];
+bool g_valid[F_COUNT];
+
+// Draws `text` in the box (x, y, w, h) unless it is already there with that color.
+void drawField(Field f, int16_t x, int16_t y, int16_t w, uint8_t size, uint16_t color, const char* text) {
+    if (text == nullptr) text = "";
+    if (g_valid[f] && g_color[f] == color && strncmp(g_text[f], text, sizeof(g_text[f]) - 1) == 0) return;
+
+    g_tft.fillRect(x, y, w, 8 * size, kBg);
+    g_tft.setTextSize(size);
     g_tft.setTextColor(color, kBg);
-    g_tft.setTextSize(2);
-    g_tft.setCursor(kValueX, y);
+    g_tft.setCursor(x, y);
     g_tft.print(text);
+
+    strncpy(g_text[f], text, sizeof(g_text[f]) - 1);
+    g_text[f][sizeof(g_text[f]) - 1] = '\0';
+    g_color[f] = color;
+    g_valid[f] = true;
 }
 
-void drawLabel(int row, const char* text) {
-    const int16_t y = kRowsTop + row * kRowHeight;
-    g_tft.setTextColor(kFg, kBg);
-    g_tft.setTextSize(2);
-    g_tft.setCursor(4, y);
+void label(int16_t x, int16_t y, uint16_t color, const char* text) {
+    g_tft.setTextSize(1);
+    g_tft.setTextColor(color, kBg);
+    g_tft.setCursor(x, y);
     g_tft.print(text);
 }
 
@@ -72,7 +82,7 @@ bool begin() {
 
     g_spi.begin(pins::TFT_SCLK, pins::TFT_MISO, pins::TFT_MOSI, pins::TFT_CS);
     g_tft.begin();
-    g_tft.setRotation(0);  // portrait, 240x320
+    g_tft.setRotation(0);      // portrait, 240x320
     g_tft.setTextWrap(false);  // never let long text wrap onto the next row
     g_tft.fillScreen(kBg);
 
@@ -98,73 +108,55 @@ void showBoot(const char* project_name, const char* fw_version) {
     g_tft.print(project_name);
 }
 
-void showStatusLayout(const StatusData& data) {
+void showDashboardLayout(const char* fw_version) {
     g_tft.fillScreen(kBg);
-    g_tft.setTextColor(kAccent, kBg);
+    memset(g_valid, 0, sizeof(g_valid));  // force a full repaint of the dynamic fields
+
+    // Title (size 2: 14 chars = 168 px)
     g_tft.setTextSize(2);
-    g_tft.setCursor(4, 8);
-    g_tft.print("ARQUIS EV DIAG");  // short title: the full name does not fit at size 2
-    g_tft.drawFastHLine(0, 30, kWidth, kAccent);
+    g_tft.setTextColor(kAccent, kBg);
+    g_tft.setCursor(4, 4);
+    g_tft.print("ARQUIS EV DIAG");
+    g_tft.drawFastHLine(0, 24, kWidth, kAccent);
 
-    g_tft.setTextColor(kWarn, kBg);
-    g_tft.setTextSize(1);
-    g_tft.setCursor(4, 40);
-    g_tft.print("STAGE 1 - SYSTEM STATUS");
+    label(4, 28, kWarn, "WIFI");
+    g_tft.drawFastHLine(0, 90, kWidth, kDim);
 
-    if (g_netSsid[0]) {
-        g_tft.drawFastHLine(0, 178, kWidth, kAccent);
-        g_tft.setTextColor(kWarn, kBg);
-        g_tft.setTextSize(1);
-        g_tft.setCursor(4, 188);
-        g_tft.print("PHONE WEB - connect to WiFi:");
-        g_tft.setTextColor(kFg, kBg);
-        g_tft.setTextSize(2);
-        g_tft.setCursor(4, 204);
-        g_tft.print(g_netSsid);
-        g_tft.setCursor(4, 228);
-        g_tft.print("Key ");
-        g_tft.print(g_netPass);
-        g_tft.setTextSize(1);
-        g_tft.setTextColor(kAccent, kBg);
-        g_tft.setCursor(4, 256);
-        g_tft.print(g_netUrl);
-    }
+    g_tft.drawFastHLine(0, 210, kWidth, kDim);
+    label(4, 216, kWarn, "SISTEMA");
 
-    drawLabel(0, "FW");
-    drawLabel(1, "Uptime");
-    drawLabel(2, "Heap");
-    drawLabel(3, "PSRAM");
-    drawLabel(4, "Flash");
-
-    updateStatus(data);
+    label(4, 292, kGood, "No envia ordenes a la scooter");
+    char fw[40];
+    snprintf(fw, sizeof(fw), "FW %s", fw_version ? fw_version : "?");
+    label(4, 306, kDim, fw);
 }
 
-void updateStatus(const StatusData& data) {
-    char buf[24];
+void updateDashboard(const Dashboard& d) {
+    char buf[48];
 
-    drawValue(0, data.fw_version, kFg);
+    // ---- Wi-Fi ----
+    snprintf(buf, sizeof(buf), "clientes: %d", d.clients);
+    drawField(F_CLIENTS, 120, 28, 116, 1, d.clients > 0 ? kGood : kFg, buf);
+    drawField(F_SSID, 4, 40, 232, 2, kFg, d.ssid);
 
-    formatUptime(buf, sizeof(buf), data.uptime_s);
-    drawValue(1, buf, kFg);
+    snprintf(buf, sizeof(buf), "Clave %s", d.password ? d.password : "");
+    // Size 2 fits 20 characters; longer passwords drop to size 1 so they never overflow.
+    const bool bigKey = strlen(buf) <= 19;
+    drawField(F_PASS, 4, 58, 232, bigKey ? 2 : 1, kFg, buf);
+    drawField(F_URL, 4, 78, 232, 1, kAccent, d.url);
 
-    formatBytes(buf, sizeof(buf), data.heap_free_bytes);
-    drawValue(2, buf, kFg);
+    // ---- Activity ----
+    drawField(F_BLE_T, 4, 96, 232, 2, d.ble_active ? kGood : kFg, d.ble_title);
+    drawField(F_BLE_D, 4, 114, 232, 1, kDim, d.ble_detail);
+    drawField(F_UART_T, 4, 130, 232, 2, d.uart_active ? kGood : kFg, d.uart_title);
+    drawField(F_UART_D, 4, 148, 232, 1, kDim, d.uart_detail);
+    drawField(F_BMS_T, 4, 164, 232, 2, d.bms_alert ? kBad : kFg, d.bms_title);
+    drawField(F_BMS_D, 4, 182, 232, 1, d.bms_alert ? kBad : kDim, d.bms_detail);
+    drawField(F_HINT, 4, 198, 232, 1, kWarn, d.hint);
 
-    if (data.psram_total_bytes == 0) {
-        drawValue(3, "NOT FOUND", ILI9341_RED);
-    } else {
-        formatBytes(buf, sizeof(buf), data.psram_total_bytes);
-        drawValue(3, buf, kFg);
-    }
-
-    formatBytes(buf, sizeof(buf), data.flash_size_bytes);
-    drawValue(4, buf, kFg);
-}
-
-void setNetworkInfo(const char* ssid, const char* password, const char* url) {
-    strncpy(g_netSsid, ssid, sizeof(g_netSsid) - 1);
-    strncpy(g_netPass, password, sizeof(g_netPass) - 1);
-    strncpy(g_netUrl, url, sizeof(g_netUrl) - 1);
+    // ---- System ----
+    drawField(F_SYS1, 4, 228, 232, 1, kFg, d.sys1);
+    drawField(F_SYS2, 4, 240, 232, 1, kFg, d.sys2);
 }
 
 void showTextList(const char* title, const char* const* lines, int count) {

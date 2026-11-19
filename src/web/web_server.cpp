@@ -31,6 +31,7 @@ constexpr size_t kMaxGattTextBytes = 24 * 1024;
 WebServer g_server(80);
 char g_password[64];
 bool g_started = false;
+bool g_passwordFixed = false;
 
 /// Print sink that captures text into a String (bounded).
 class StringPrint : public Print {
@@ -51,6 +52,7 @@ void makePassword() {
     const size_t n = strlen(secrets::WIFI_PASSWORD);
     if (n >= 8 && n <= 63) {
         strcpy(g_password, secrets::WIFI_PASSWORD);
+        g_passwordFixed = true;
         return;
     }
 #endif
@@ -385,8 +387,10 @@ void loop() {
     ble_analyzer::pollScan();
 }
 
+int clients() { return g_started ? (int)WiFi.softAPgetStationNum() : 0; }
 const char* ssid() { return kSsid; }
 const char* password() { return g_password; }
+bool passwordIsFixed() { return g_passwordFixed; }
 String url() { return String("http://") + WiFi.softAPIP().toString(); }
 
 }  // namespace web

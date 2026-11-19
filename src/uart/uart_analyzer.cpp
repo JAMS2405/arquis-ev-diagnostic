@@ -44,6 +44,7 @@ int g_channel = 0;
 uint32_t g_endMs = 0;
 uint32_t g_startMs = 0;
 uint32_t g_baud = 0;
+uint32_t g_lastDetectBaud = 0;
 
 // ---- edge capture (detect) -------------------------------------------------
 volatile uint32_t g_edges[kEdgeCap];
@@ -177,6 +178,7 @@ void finishDetect(const char* reason) {
                   "wrong, or the speed is non-standard.\n");
         return;
     }
+    g_lastDetectBaud = est.top[0].baud;
     for (size_t i = 0; i < est.top_count; i++) {
         appendf(">> baud %lu score %.2f\n", static_cast<unsigned long>(est.top[i].baud),
                 static_cast<double>(est.top[i].score));
@@ -370,6 +372,9 @@ void poll() {
 Status status() {
     Status st{};
     st.mode = g_mode;
+    st.channel = g_channel;
+    st.baud = g_baud;
+    st.last_detect_baud = g_lastDetectBaud;
     if (g_mode != Mode::Idle) {
         const int32_t left = static_cast<int32_t>(g_endMs - millis());
         st.secs_left = left > 0 ? static_cast<uint32_t>(left / 1000) : 0;

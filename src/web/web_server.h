@@ -19,8 +19,13 @@ bool begin();
 /// Services HTTP clients and finalizes async BLE scans. Call from loop().
 void loop();
 
+/// Number of phones currently connected to the access point.
+int clients();
+
 const char* ssid();
 const char* password();
+/// true if the password comes from the local, git-ignored config/secrets.h
+bool passwordIsFixed();
 String url();
 
 }  // namespace web

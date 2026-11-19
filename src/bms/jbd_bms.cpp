@@ -90,7 +90,23 @@ void finish(NimBLEClient* client) {
 
 }  // namespace
 
+namespace {
+Report g_last;
+bool g_haveLast = false;
+}  // namespace
+
+static bool readReportImpl(int index, Report& out);
+
 bool readReport(int index, Report& out) {
+    const bool ok = readReportImpl(index, out);
+    g_last = out;
+    g_haveLast = true;
+    return ok;
+}
+
+const Report* last() { return g_haveLast ? &g_last : nullptr; }
+
+static bool readReportImpl(int index, Report& out) {
     memset(&out, 0, sizeof(out));
 
     const ble_analyzer::DeviceInfo* info = ble_analyzer::device(index);
