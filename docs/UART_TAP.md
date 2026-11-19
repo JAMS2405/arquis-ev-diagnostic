@@ -35,6 +35,45 @@ Cálculo: `V_nodo = V_línea × 20 / (10 + 20)`.
 
 Con tus mediciones (≈ 4,26 V y ≈ 2,27 V de promedio) lo razonable es que ambas sean líneas de 4–5 V con tráfico, cuyo promedio queda por debajo de su nivel alto. **Es una hipótesis**: la captura lo confirmará o no. Si una línea resultara ser de 3,3 V, este divisor no sirve y hay que cambiarlo.
 
+## Conexiones completas del ESP32
+
+Pines definidos en `src/config/pins_config.h` (los de UART son **provisionales**: confirma en la serigrafía de tu placa que existen los rótulos `15` y `16`).
+
+| Pin del ESP32 | Se conecta a | Notas |
+|---|---|---|
+| **GND** | **B− (cable negro)** del conector de la pantalla **y** a la pata de abajo de cada 20 kΩ | Es la referencia común. Conéctalo **primero** |
+| **GPIO15** (canal A) | Resistencia de **1 kΩ** → nodo del divisor A | Línea **amarilla (TX)** |
+| **GPIO16** (canal B) | Resistencia de **1 kΩ** → nodo del divisor B | Línea **verde (RX)** (opcional al principio) |
+| 5V | Solo en el Paso 0, para validar el divisor | Retirar después |
+| 3V3 | Nada | |
+| GPIO8–14 | Pantalla TFT (ya conectada) | No tocar |
+
+**No se conecta nada** a B+ (rojo), DS (blanco) ni ZB (azul). El ESP32 **no tiene ningún pin de salida** hacia la scooter.
+
+```
+Conector de la pantalla                        Protoboard                         ESP32-S3
+┌───────────┐
+│ B−  negro ├────────────────────────────────────┬───────────┬─────────────────── GND
+│           │                                    │           │
+│ TX amarillo├──[10 kΩ]──┬──[1 kΩ]──────────────────────────────────────────────── GPIO15 (A)
+│           │            │                       │           │
+│           │         [20 kΩ]──────────────────── ┤           │
+│           │                                    │           │
+│ RX verde  ├──[10 kΩ]──┬──[1 kΩ]──────────────────────────────────────────────── GPIO16 (B)
+│           │            │                                   │
+│           │         [20 kΩ]─────────────────────────────────┘
+│ B+ rojo   │  ✗ NO CONECTAR
+│ DS blanco │  ✗ NO CONECTAR
+│ ZB azul   │  ✗ NO CONECTAR
+└───────────┘
+```
+
+Cada divisor es: línea → 10 kΩ → **nodo** → 20 kΩ → GND, y del nodo sale la 1 kΩ hacia el GPIO.
+
+**Primera vez:** monta y valida **solo el canal A** (amarillo, GPIO15). El canal B puede quedar sin conectar hasta que el A funcione. El software captura **un canal a la vez**.
+
+**Orden de conexión:** con la scooter apagada, 1) GND, 2) la línea al divisor, 3) enciende la scooter. Para desconectar, al revés: apaga, retira la línea, luego GND.
+
 ## Paso 0 — Probar el montaje SIN la scooter
 
 1. **Valida el divisor:** conecta la entrada del divisor al pin **5V** del ESP32 y su GND al GND. Mide con el multímetro el punto medio (entre 10 kΩ y 20 kΩ, antes de la 1 kΩ): debe dar **≈ 3,3 V**. Si no, no continúes.
