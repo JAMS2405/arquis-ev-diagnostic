@@ -1,0 +1,6 @@
+{
+  "name": "uart_sniff",
+  "version": "0.1.0",
+  "description": "Pure C++ helpers for the passive UART analyzer: baud estimation from pulse widths, frame splitting, per-byte variability analysis and checksum detection. No Arduino dependencies, host-testable.",
+  "license": "MIT"
+}
