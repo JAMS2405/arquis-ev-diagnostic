@@ -13,7 +13,16 @@
 ## Clave de la red
 
 - **Por defecto:** se genera una clave aleatoria de 10 caracteres **en cada arranque** y se muestra en la TFT y por serie. No hay ninguna clave fija en el repositorio.
-- **Clave fija (opcional):** copia `src/config/secrets.example.h` a `src/config/secrets.h` y edítala (8 a 63 caracteres). `secrets.h` está en `.gitignore`: **no lo subas**. La clave queda dentro del binario compilado.
+- **Clave fija (opcional):** crea el archivo local `src/config/secrets.h` con tu clave (8 a 63 caracteres). `secrets.h` está en `.gitignore`: **nunca se sube al repositorio**, y por eso la clave no aparece en GitHub. La clave queda dentro del binario compilado.
+
+  En PowerShell, desde la carpeta del proyecto (cambia `TU-CLAVE`):
+
+  ```powershell
+  Set-Content -Path src\config\secrets.h -Encoding ascii -Value '#pragma once','namespace secrets { constexpr const char* WIFI_PASSWORD = "TU-CLAVE"; }'
+  ```
+
+  Comprueba que `git status` **no** lista `secrets.h` y vuelve a subir el firmware. Al arrancar, el monitor serie dice `(fixed)`. Si no cambia, `python -m platformio run -t clean` y sube de nuevo. Para volver a la clave aleatoria, borra el archivo y sube otra vez.
+- Una clave corta y fácil de adivinar deja entrar a cualquiera cercano a la web (que es de solo lectura sobre el vehículo, pero puede lanzar escaneos y lecturas). Elige una que no sea trivial.
 - La red es WPA2, con máximo 2 clientes.
 
 ## API (todo local, sin escritura al vehículo)

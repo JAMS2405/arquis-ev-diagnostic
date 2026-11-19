@@ -47,6 +47,8 @@ _Esta tabla se actualiza solo con resultados reales._
 | S-014 | Pruebas unitarias en el PC de `uart_sniff` con **trazas UART sintéticas** (`pio test -e native`, `-std=gnu++11`) | Contenedor Linux | **Pasa 36/36** (12 JBD + 7 `notify_log` + 17 `uart_sniff`). Cubren: velocidad detectada para 1200–115200 baud con ruido de temporización y glitches, tramas con 40 repeticiones, ruido aleatorio no confiable, separación de tramas por pausa, capacidad y truncado, desbordamiento del temporizador, bytes variables y plantilla, checksum (suma invertida de 16 bits LE, xor8) y rechazo de falsos positivos. En el primer intento fallaron 3: 2 errores de mi prueba y **1 defecto real** (un byte final constante se aceptaba como checksum); se corrigió el código y se añadió una prueba de regresión. **Las trazas son simuladas: no validan la línea real de la Evobike.** | 2026-11-19 |
 | S-015 | Interfaz del UART en Chromium headless contra un servidor **simulado** | Contenedor Linux | **Pasa**: aviso de confirmación (menciona divisor y «solo recibe»), parámetros de detección y captura correctos, velocidad detectada pasada al campo de baudios, registro idéntico al del servidor, descarga, caso de error, texto hostil inerte, sin errores JS. **No valida el ESP32.** | 2026-11-19 |
 
+| S-016 | Compilación del panel nuevo y la clave Wi-Fi fija (`feat/dashboard-fixed-wifi`); pruebas del PC; compilación con `secrets.h` local | Contenedor Linux, `espressif32@7.0.1` | **Pasa**: `[SUCCESS]`, RAM 35,1 % (114 904 B), Flash 15,6 % (1 019 621 B). `pio test -e native`: **44/44** (8 nuevas de `panel_text`). Con un `secrets.h` local, el firmware embebe exactamente la clave elegida, git lo ignora (`.gitignore:45`) y al quitarlo se recompila sin ella; el archivo se borró del contenedor. Hallazgos: (1) la prueba con valores extremos mostró que un texto de BLE medía 48 caracteres y no cabía en pantalla: ahora **cada constructor se recorta a sí mismo**; (2) un título de tamaño 2 desde x = 4 admite **19** caracteres, no 20; (3) **defecto previo corregido**: el refresco de la pantalla se detenía para siempre tras el primer escaneo con dispositivos (`deviceCount() == 0`). **No ejecutado en hardware.** | 2026-11-19 |
+
 > Una compilación exitosa **solo demuestra que el código compila**. No valida arranque, pines, pantalla ni ningún hardware.
 
 ## 3. Pruebas pendientes
@@ -74,6 +76,12 @@ _Esta tabla se actualiza solo con resultados reales._
 - [ ] P-030 Calibración del ADC con fuente de referencia y multímetro.
 - [ ] P-031 Validación de la protección de entrada (límites máximos).
 - [ ] P-032 Medición de una señal real de baja tensión del vehículo.
+
+### Pantalla (panel) y clave fija
+- [ ] P-080 El panel se ve completo en la TFT: sin textos cortados ni solapados, las filas BLE/UART/BMS/sistema legibles.
+- [ ] P-081 Los campos se actualizan solos (uptime, clientes al conectar el teléfono, estado BLE/UART durante una acción) y **no se congela** tras un escaneo.
+- [ ] P-082 Con `secrets.h` local, la red usa la clave fija, el monitor dice `(fixed)` y no cambia tras reiniciar.
+- [ ] P-083 `git status` no lista `secrets.h` en el PC del usuario.
 
 ### Interfaz web
 - [x] P-050 / P-051 El teléfono se conectó al punto de acceso y cargó la página (H-005, confirmado por el usuario).
