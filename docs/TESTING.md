@@ -17,6 +17,7 @@ Este documento separa estrictamente tres categorías. **No se registra como ejec
 | H-003 | Pantalla TFT con el firmware de H-002 | ESP32-S3 real, informado por el usuario | **Parcial, con defectos de software**: la foto del usuario muestra la pantalla ILI9341 funcionando en vertical, con el uptime avanzando (`00:02:21`), Heap 358 KB, PSRAM 7.99 MB y Flash 16.00 MB. Defectos observados: (1) el título se cortaba («ARQUIS EV DIAGNOSTI», la «C» pasaba a la línea siguiente); (2) el valor de FW se cortaba («0.1.0-stag») y la «e» invadía la fila de Uptime. Causa: texto más ancho que el área disponible. Corregido en el commit siguiente; pendiente de reflashear y confirmar (P-004). Por mostrar imagen, quedan funcionales SCLK, MOSI, CS, DC y RST con los pines de `pins_config.h`; MISO y BL (14) siguen sin confirmar. | 2026-11-18 |
 | H-004 | Escaneo BLE y exploración GATT de solo lectura sobre un dispositivo real: un BMS JBD cercano (**no es la scooter**) | ESP32-S3 real, firmware de la rama BLE/web; interfaz usada (serie o web) sin confirmar | **Pasa**: el escaneo lo encontró, se conectó, enumeró 5 servicios y sus características, leyó solo las que declaran READ y se desconectó sin errores. No se escribió nada. Salida y análisis en `BLE_NOTES.md`. No prueba la scooter ni la web por sí sola. | 2026-11-18 |
 | H-005 | Exploración GATT de solo lectura de la **Evobike S13-2** (anunciada como `lsrt`, confirmado por el usuario) desde la **web en el teléfono**, con el resultado descargado (`arquis-gatt-<marca de tiempo>.txt`) | ESP32-S3 real; teléfono del usuario | **Pasa**: conectó, enumeró 3 servicios con etiquetas de UUID correctas, leyó solo las características READ y se desconectó. El archivo evidencia que la web (escaneo, GATT y descarga) funcionó. Análisis en `BLE_NOTES.md`. | 2026-11-18 |
+| H-006 | Primer **modo de escucha** sobre la Evobike S13-2 (`lsrt`), 30 s, desde la web del teléfono; en la misma sesión se repitió la exploración GATT | ESP32-S3 real; estado de la scooter y de la app oficial durante la prueba **no informado** | **Funciona, sin datos**: se suscribió a `6e400003-…` (servicio `6e400001-…`) sin errores y quedó escuchando 30 s; **0 notificaciones, 0 bytes**. La exploración GATT repetida es idéntica a la de H-005 (mismos servicios y valores, incluido el hash `2B2A`). El dispositivo no transmite por sí solo en esas condiciones. | 2026-11-19 |
 | — | Resto de pruebas sobre hardware: ninguna ejecutada | — | — | — |
 
 _Esta tabla se actualiza solo con resultados reales._
@@ -83,7 +84,7 @@ _Esta tabla se actualiza solo con resultados reales._
 - [ ] P-064 Signo de la corriente verificado cargando y descargando la batería.
 
 ### Modo de escucha (Evobike S13-2)
-- [ ] P-070 Escucha de 30 s con la scooter **encendida y quieta** y la app oficial cerrada: ¿llegan notificaciones por sí solas? Pegar el `.txt`.
+- [x] P-070 Escucha de 30 s: **0 notificaciones** (H-006). Condiciones de la scooter no informadas; repetir anotando el estado (encendida y quieta / rueda en el aire).
 - [ ] P-071 Escucha con la **rueda en el aire** y la scooter en distintos estados (acelerador, marcha, freno): ¿cambian los bytes?
 - [ ] P-072 Correlacionar el registro con lo que muestra la pantalla o la app oficial (velocidad, batería, marcha).
 - [ ] P-073 Tras la escucha, la scooter conserva su estado y la app oficial sigue conectando.
